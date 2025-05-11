@@ -1,4 +1,3 @@
-
 import { getUserData } from "./authService";
 
 interface ApiQuizQuestion {
@@ -57,7 +56,9 @@ export const generateQuizQuestions = async (
                 'E': 4
             };
 
-            let correctAnswerIndex = 0;
+            let correctAnswerIndex = -1;
+            let correctAnswer = '';
+            let options = [...q.options]; // Create a copy of options to modify if needed
 
             // Handle different answer formats
             if (q.answer === 'None of the above (all are valid)') {
@@ -67,21 +68,33 @@ export const generateQuizQuestions = async (
                     // If not found in options, use the last option
                     correctAnswerIndex = q.options.length - 1;
                 }
-            } else if (q.answer.length === 1 && letterToIndex[q.answer]) {
+                correctAnswer = q.options[correctAnswerIndex];
+            } else if (q.answer.length === 1 && letterToIndex[q.answer] !== undefined) {
                 // Letter answer (A, B, C, D)
                 correctAnswerIndex = letterToIndex[q.answer];
+                if (correctAnswerIndex < options.length) {
+                    correctAnswer = options[correctAnswerIndex];
+                } else {
+                    // If the letter index is out of bounds, use the answer text directly
+                    correctAnswer = q.answer;
+                }
             } else {
-                // Direct text match
+                // Direct text match - check if the answer is in the options
                 correctAnswerIndex = q.options.findIndex(option => option === q.answer);
-                if (correctAnswerIndex === -1) correctAnswerIndex = 0; // Default to first if not found
+                if (correctAnswerIndex === -1) {
+                    // Answer not found in options - add it as an additional option
+                    options.push(q.answer);
+                    correctAnswerIndex = options.length - 1;
+                    correctAnswer = q.answer;
+                } else {
+                    correctAnswer = q.options[correctAnswerIndex];
+                }
             }
-
-            const correctAnswer = q.options[correctAnswerIndex];
 
             return {
                 id: index + 1,
                 question: q.question,
-                options: q.options,
+                options: options,
                 correctAnswer,
                 explanation: q.explanation || "No explanation provided"
             };
@@ -431,46 +444,26 @@ const getMockQuestions = (topic: string, numberOfQuestions: number): QuizQuestio
         ]
     };
 
-    // Get questions for the requested topic, or generate generic ones if topic not found
-    const availableQuestions = questionsByTopic[topic] || [
-        {
-            id: 1,
-            question: `What is a key concept in ${topic}?`,
-            options: [
-                'Concept A',
-                'Concept B',
-                'Concept C',
-                'Concept D'
-            ],
-            correctAnswer: 'Concept A',
-            explanation: `This is an explanation about a key concept in ${topic}.`
-        },
-        {
-            id: 2,
-            question: `Which of these is NOT related to ${topic}?`,
-            options: [
-                'Related item A',
-                'Related item B',
-                'Unrelated item',
-                'Related item C'
-            ],
-            correctAnswer: 'Unrelated item',
-            explanation: `This unrelated item is not part of ${topic}.`
-        },
-        {
-            id: 3,
-            question: `When was ${topic} first introduced?`,
-            options: [
-                'Before 1990',
-                '1990-2000',
-                '2000-2010',
-                'After 2010'
-            ],
-            correctAnswer: '2000-2010',
-            explanation: `${topic} was introduced during this time period.`
-        }
-    ];
+    // Get raw questions for the requested topic or default to React Native
+    const rawQuestions = questionsByTopic[topic] || questionsByTopic['React Native'];
 
-    // Return the requested number of questions (or all available if fewer)
-    return availableQuestions.slice(0, numberOfQuestions);
+    // Process questions to handle answers not in options
+    const processedQuestions = rawQuestions.map(q => {
+        // Check if the correct answer is in the options
+        const correctAnswerIndex = q.options.findIndex(option => option === q.correctAnswer);
+
+        if (correctAnswerIndex === -1) {
+            // If the correct answer is not in the options, add it
+            return {
+                ...q,
+                options: [...q.options, q.correctAnswer],
+            };
+        }
+
+        // If the correct answer is already in the options, return as is
+        return q;
+    });
+
+    // Return the requested number of questions
+    return processedQuestions.slice(0, numberOfQuestions);
 }; 

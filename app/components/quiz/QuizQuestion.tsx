@@ -58,46 +58,48 @@ const QuizQuestion: React.FC<QuizQuestionProps> = ({
       {/* Options */}
       <Animated.View style={[styles.optionsContainer, optionsStyle]}>
         {Array.isArray(options) ? options.map((option, index) => (
-          <AnimatedTouchableOpacity
-            key={index}
-            style={[
-              styles.optionButton,
-              { 
-                backgroundColor: theme.card,
-                borderColor: theme.border
-              },
-              userAnswer === option && { 
-                borderColor: theme.primary,
-                backgroundColor: isDark ? 'rgba(63, 81, 181, 0.2)' : 'rgba(63, 81, 181, 0.1)' 
-              },
-              showExplanation && option === question.correctAnswer && {
-                borderColor: 'green',
-                backgroundColor: isDark ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.1)'
-              },
-              showExplanation && userAnswer === option && option !== question.correctAnswer && {
-                borderColor: 'red',
-                backgroundColor: isDark ? 'rgba(244, 67, 54, 0.2)' : 'rgba(244, 67, 54, 0.1)'
-              }
-            ]}
-            onPress={() => !isAnswered && handleSelectOption(option)}
-            disabled={isAnswered}
-            entering={FadeIn.delay(100 * index).duration(300)}
-          >
-            <Text style={[styles.optionText, { color: theme.text }]}>
-              {option || `Option ${index + 1}`}
-            </Text>
-            
-            {userAnswer === option && (
-              <View style={styles.optionIcon}>
-                <Ionicons 
-                  name={option === question.correctAnswer ? "checkmark-circle" : "close-circle"} 
-                  size={24} 
-                  color={option === question.correctAnswer ? "green" : "red"} 
-                />
+            <AnimatedTouchableOpacity
+              key={index}
+              style={[
+                styles.optionButton,
+                { 
+                  backgroundColor: theme.card,
+                  borderColor: theme.border
+                },
+                userAnswer === option && { 
+                  borderColor: theme.primary,
+                  backgroundColor: isDark ? 'rgba(63, 81, 181, 0.2)' : 'rgba(63, 81, 181, 0.1)' 
+                },
+                showExplanation && option === question.correctAnswer && {
+                  borderColor: 'green',
+                  backgroundColor: isDark ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.1)'
+                },
+                showExplanation && userAnswer === option && option !== question.correctAnswer && {
+                  borderColor: 'red',
+                  backgroundColor: isDark ? 'rgba(244, 67, 54, 0.2)' : 'rgba(244, 67, 54, 0.1)'
+                }
+              ]}
+              onPress={() => !isAnswered && handleSelectOption(option)}
+              disabled={isAnswered}
+              entering={FadeIn.delay(100 * index).duration(300)}
+            >
+              <View style={styles.optionTextContainer}>
+                <Text style={[styles.optionText, { color: theme.text }]}>
+                  {option || `Option ${index + 1}`}
+                </Text>
               </View>
-            )}
-          </AnimatedTouchableOpacity>
-        )) : (
+              
+              {userAnswer === option && (
+                <View style={styles.optionIcon}>
+                  <Ionicons 
+                    name={option === question.correctAnswer ? "checkmark-circle" : "close-circle"} 
+                    size={24} 
+                    color={option === question.correctAnswer ? "green" : "red"} 
+                  />
+                </View>
+              )}
+            </AnimatedTouchableOpacity>
+          )) : (
           <Text style={[styles.errorText, { color: theme.error || '#dc3545' }]}>
             No options available for this question
           </Text>
@@ -151,9 +153,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  optionTextContainer: {
+    flex: 1,
+  },
   optionText: {
     fontSize: 16,
-    flex: 1,
   },
   optionIcon: {
     marginLeft: 10,
