@@ -14,8 +14,8 @@ import {
   View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import * as authService from '../services/authService';
 import { getTheme } from '../theme/theme';
 
 interface FormErrors {
@@ -27,6 +27,7 @@ interface FormErrors {
 
 export default function Login() {
   const { isDark } = useTheme();
+  const { login, register, isAuthenticated } = useAuth();
   const theme = getTheme(isDark);
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -41,6 +42,13 @@ export default function Login() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [passwordsMatch, setPasswordsMatch] = useState(true);
   
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/home');
+    }
+  }, [isAuthenticated]);
+
   // Check if passwords match in real-time
   useEffect(() => {
     if (!isLogin && password && confirmPassword) {
@@ -59,8 +67,8 @@ export default function Login() {
     
     if (!email) {
       newErrors.email = 'Email is required';
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email)) {
-      newErrors.email = 'Invalid email address';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Email is invalid';
     }
     
     if (!password) {
@@ -73,6 +81,7 @@ export default function Login() {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (!isLogin && password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
+      setPasswordsMatch(false);
     }
     
     setErrors(newErrors);
@@ -83,12 +92,12 @@ export default function Login() {
     if (validateForm()) {
       setIsLoading(true);
       try {
-        const response = await authService.register({
-          name,
+        const response = await register(
+          name, 
           email,
           password,
-          confirm_password: confirmPassword
-        });
+          confirmPassword
+        );
         
         // Display success message
         Toast.show({
@@ -119,10 +128,7 @@ export default function Login() {
     if (validateForm()) {
       setIsLoading(true);
       try {
-        const response = await authService.login({
-          email,
-          password
-        });
+        const response = await login(email, password);
         
         // Display success message
         Toast.show({
@@ -135,7 +141,7 @@ export default function Login() {
         
         // Navigate to home screen
         setTimeout(() => {
-          router.replace({pathname: '/home'});
+          router.replace('/home');
         }, 1000);
       } catch (error) {
         // Display error message

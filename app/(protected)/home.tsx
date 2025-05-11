@@ -1,19 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
-import { useTheme } from './context/ThemeContext';
-import * as authService from './services/authService';
-import { getTheme } from './theme/theme';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { getTheme } from '../theme/theme';
 
 interface FeedbackErrors {
   subject?: string;
@@ -22,40 +22,18 @@ interface FeedbackErrors {
 
 export default function Home() {
   const { isDark, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   const theme = getTheme(isDark);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [displayName, setDisplayName] = useState<string | null>(null);
   
   // Form state
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<FeedbackErrors>({});
 
-  // Check authentication status on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = authService.getAuthToken();
-      
-      if (!token) {
-        // Redirect to login if no token
-        router.replace('/');
-      } else {
-        // Get user data from localStorage
-        const userData = authService.getUserData();
-        if (userData && userData.display_name) {
-          setDisplayName(userData.display_name);
-        } else {
-          setDisplayName('User');
-        }
-      }
-    };
-    
-    checkAuth();
-  }, []);
-
   const handleLogout = () => {
-    // Clear auth token
-    authService.removeAuthToken();
+    // Call logout from auth context
+    logout();
     
     // Show toast
     Toast.show({
@@ -67,7 +45,7 @@ export default function Home() {
     
     // Navigate to login screen
     setTimeout(() => {
-      router.replace('/');
+      router.replace('/(auth)/login');
     }, 1000);
   };
 
@@ -135,8 +113,8 @@ export default function Home() {
       
       <View style={styles.content}>
         <Text style={[styles.title, { color: theme.text }]}>Welcome to Klyptik</Text>
-        {displayName && (
-          <Text style={[styles.username, { color: theme.primary }]}>Hello, {displayName}!</Text>
+        {user && user.display_name && (
+          <Text style={[styles.username, { color: theme.primary }]}>Hello, {user.display_name}!</Text>
         )}
         <Text style={[styles.subtitle, { color: isDark ? '#aaa' : '#666' }]}>You are logged in!</Text>
         
@@ -249,33 +227,36 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 50,
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    paddingBottom: 20,
   },
   themeToggle: {
     padding: 10,
-    borderRadius: 20,
+    borderRadius: 30,
   },
   logoutButton: {
     padding: 10,
-    borderRadius: 20,
+    borderRadius: 30,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 10,
     textAlign: 'center',
   },
   username: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 10,
     textAlign: 'center',
   },
   subtitle: {
@@ -288,21 +269,23 @@ const styles = StyleSheet.create({
     maxWidth: 300,
   },
   button: {
-    borderRadius: 12,
-    height: 56,
-    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
   buttonText: {
-    color: '#fff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
   outlineButton: {
-    borderRadius: 12,
-    height: 56,
-    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
     borderWidth: 1,
   },
   outlineButtonText: {
@@ -318,60 +301,63 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '100%',
+    maxWidth: 500,
     borderRadius: 12,
-    padding: 20,
+    overflow: 'hidden',
     maxHeight: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
   },
   modalBody: {
-    flex: 1,
+    padding: 16,
   },
   formGroup: {
     marginBottom: 20,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
     marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '500',
   },
   input: {
     height: 50,
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     fontSize: 16,
   },
   textArea: {
+    minHeight: 120,
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingTop: 12,
+    paddingBottom: 12,
     fontSize: 16,
-    minHeight: 120,
   },
   errorText: {
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
+    marginTop: 6,
+    fontSize: 14,
   },
   submitButton: {
-    borderRadius: 12,
-    height: 50,
-    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 10,
   },
   submitButtonText: {
-    color: '#fff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },

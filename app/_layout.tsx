@@ -2,6 +2,7 @@ import { Slot } from "expo-router";
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { getTheme } from './theme/theme';
 
@@ -23,8 +24,10 @@ function AppLayout() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <AppLayout />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <AppLayout />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
