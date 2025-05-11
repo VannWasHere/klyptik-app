@@ -1,7 +1,6 @@
-// Mock data for AI-generated questions
-// In a real app, this would be an API call to an AI service
 
-// Interface for API response
+import { getUserData } from "./authService";
+
 interface ApiQuizQuestion {
     question: string;
     options: string[];
@@ -16,7 +15,6 @@ interface ApiQuizResponse {
     };
 }
 
-// Interface for our app's question format
 export interface QuizQuestion {
     id: number;
     question: string;
@@ -25,7 +23,6 @@ export interface QuizQuestion {
     explanation: string;
 }
 
-// Generate quiz questions based on topic and number of questions
 export const generateQuizQuestions = async (
     topic: string,
     numberOfQuestions: number
@@ -105,11 +102,8 @@ export const saveQuizResults = async (
     questions?: QuizQuestion[],
     userAnswers?: (string | null)[]
 ): Promise<boolean> => {
+    const userData = getUserData();
     try {
-        // Here you would call an API to save the quiz results
-        // For now, we'll just log and return success
-        console.log(`Saving quiz results for user ${userId}: ${score}/${totalQuestions} on ${topic}`);
-
         // Example payload for saving quiz results
         const payload = {
             userId,
@@ -128,11 +122,17 @@ export const saveQuizResults = async (
             })) : undefined
         };
 
-        // In a real app, you would send this payload to your backend
-        console.log('Quiz result payload:', payload);
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}api/save-quiz?user_id=${userData?.uid}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 800));
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
 
         return true;
     } catch (error) {
@@ -158,7 +158,6 @@ export const getQuizHistory = async (userId: string) => {
 
 // Mock questions as fallback if API fails
 const getMockQuestions = (topic: string, numberOfQuestions: number): QuizQuestion[] => {
-    // Base questions for different topics (fallback data)
     const questionsByTopic: Record<string, QuizQuestion[]> = {
         'React Native': [
             {
