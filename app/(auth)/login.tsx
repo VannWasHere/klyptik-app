@@ -22,7 +22,7 @@ export default function Login() {
     // Here you would implement your authentication logic
     console.log('Login with:', email, password);
     // For now, we'll just navigate to the home screen
-    router.replace('/');
+    router.replace({pathname: '/home'});
   };
 
   const handleGoogleLogin = () => {

@@ -20,7 +20,7 @@ export default function SplashPage() {
         // Hide the splash screen
         await SplashScreen.hideAsync();
         // Navigate to the login screen
-        router.replace('/(auth)/login' as any);
+        router.replace({pathname: '/(auth)/login'});
       }
     };
 
