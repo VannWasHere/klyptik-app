@@ -101,7 +101,9 @@ export const saveQuizResults = async (
     userId: string,
     topic: string,
     score: number,
-    totalQuestions: number
+    totalQuestions: number,
+    questions?: QuizQuestion[],
+    userAnswers?: (string | null)[]
 ): Promise<boolean> => {
     try {
         // Here you would call an API to save the quiz results
@@ -115,7 +117,15 @@ export const saveQuizResults = async (
             score,
             totalQuestions,
             percentage: Math.round((score / totalQuestions) * 100),
-            completedAt: new Date().toISOString()
+            completedAt: new Date().toISOString(),
+            // Add question details if available
+            questionDetails: questions && userAnswers ? questions.map((question, index) => ({
+                question: question.question,
+                options: question.options,
+                correctAnswer: question.correctAnswer,
+                userAnswer: userAnswers[index],
+                isCorrect: userAnswers[index] === question.correctAnswer
+            })) : undefined
         };
 
         // In a real app, you would send this payload to your backend

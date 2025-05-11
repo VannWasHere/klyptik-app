@@ -189,25 +189,37 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
   // Finish quiz and save results
   const finishQuiz = async () => {
-    // Only finish if all questions answered
-    if (userAnswers.includes(null)) {
-      return false;
-    }
-    
-    setQuizCompleted(true);
-    
-    // Save results if we have a user
-    if (user && user.uid && topic) {
-      try {
-        await saveQuizResults(user.uid, topic, score, questions.length);
-        return true;
-      } catch (error) {
-        console.error('Failed to save quiz results:', error);
+    try {
+      // Only finish if all questions answered
+      if (userAnswers.includes(null)) {
         return false;
       }
+      
+      setQuizCompleted(true);
+      
+      // Save results if we have a user
+      if (user && user.uid && topic) {
+        try {
+          await saveQuizResults(
+            user.uid, 
+            topic, 
+            score, 
+            questions.length,
+            questions,
+            userAnswers
+          );
+          return true;
+        } catch (error) {
+          console.error('Failed to save quiz results:', error);
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in finishQuiz:', error);
+      return false;
     }
-    
-    return true;
   };
   
   // Reset quiz state
