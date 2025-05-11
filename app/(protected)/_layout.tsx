@@ -1,68 +1,47 @@
 import { Redirect, Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import React from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import BottomTabBar from '../components/BottomTabBar';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getTheme } from '../theme/theme';
 
-// Create animated components
-const AnimatedView = Animated.createAnimatedComponent(View);
-
 export default function ProtectedLayout() {
-  const { isDark, animatedBackground } = useTheme();
   const { isAuthenticated, isLoading } = useAuth();
+  const { isDark } = useTheme();
   const theme = getTheme(isDark);
   
-  // Animation value
-  const opacity = useSharedValue(0);
-  
-  // Animate on mount
-  useEffect(() => {
-    opacity.value = withTiming(1, { duration: 500 });
-  }, []);
-  
-  // Create animated style
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value
-    };
-  });
-  
-  // Check if we're loading
+  // Show loading indicator while checking authentication
   if (isLoading) {
     return (
-      <AnimatedView style={[{ 
-        flex: 1, 
-        justifyContent: 'center',
-        alignItems: 'center'
-      }, animatedBackground]}>
+      <View style={[styles.container, styles.centeredContent, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
-      </AnimatedView>
+      </View>
     );
   }
   
-  // If not authenticated, redirect to login
+  // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Redirect href="/(auth)/login" />;
+    return <Redirect href="/login" />;
   }
   
   return (
-    <AnimatedView 
-      style={[{ flex: 1 }, animatedBackground, animatedStyle]}
-    >
-      <StatusBar style={theme.statusBar} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: 'transparent' },
-          animation: 'fade_from_bottom',
-          animationDuration: 350,
-          gestureEnabled: true,
-          gestureDirection: 'horizontal',
-        }}
-      />
-    </AnimatedView>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <Stack screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+      }} />
+      <BottomTabBar />
+    </View>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  centeredContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+}); 

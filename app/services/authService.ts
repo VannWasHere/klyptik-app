@@ -167,4 +167,26 @@ export const removeAuthToken = (): void => {
     }
 
     // For React Native, you would use AsyncStorage or SecureStore
+};
+
+// Get user profile data
+export const getUserProfile = async (userId: string) => {
+    try {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}api/user-profile?user_id=${userId}`);
+
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error('Failed to retrieve user profile');
+        }
+
+        return data.profile;
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        throw error;
+    }
 }; 

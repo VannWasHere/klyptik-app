@@ -206,6 +206,39 @@ export const getQuizHistory = async (userId: string) => {
     }
 };
 
+// Get all quiz history
+export const getAllQuizHistory = async (userId: string) => {
+    try {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}api/all-quiz-results?user_id=${userId}`);
+
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Format quiz results
+        return data.quizResults.map((result: any) => {
+            // Format date to be more readable
+            const completedDate = new Date(result.completedAt);
+
+            return {
+                id: result.createdAt,
+                topic: result.topic,
+                score: `${result.score}/${result.totalQuestions}`,
+                percentage: result.percentage,
+                date: completedDate.toLocaleDateString(),
+                time: completedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                completedAt: result.completedAt,
+                questionDetails: result.questionDetails
+            };
+        });
+    } catch (error) {
+        console.error('Error fetching all quiz history:', error);
+        return [];
+    }
+};
+
 // Mock questions as fallback if API fails
 const getMockQuestions = (topic: string, numberOfQuestions: number): QuizQuestion[] => {
     const questionsByTopic: Record<string, QuizQuestion[]> = {
