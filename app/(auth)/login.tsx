@@ -13,10 +13,22 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming
+} from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getTheme } from '../theme/theme';
+
+// Create animated components
+const AnimatedImage = Animated.createAnimatedComponent(Image);
+const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedText = Animated.createAnimatedComponent(Text);
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 interface FormErrors {
   name?: string;
@@ -42,10 +54,63 @@ export default function Login() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [passwordsMatch, setPasswordsMatch] = useState(true);
   
+  // Animation states
+  const logoScale = useSharedValue(1.2);
+  const logoOpacity = useSharedValue(0);
+  const titleOpacity = useSharedValue(0);
+  const subtitleOpacity = useSharedValue(0);
+  const formOpacity = useSharedValue(0);
+  const buttonsOpacity = useSharedValue(0);
+  const footerOpacity = useSharedValue(0);
+  
+  // Animated styles
+  const logoAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: logoScale.value }],
+    opacity: logoOpacity.value
+  }));
+  
+  const titleAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: titleOpacity.value,
+    transform: [{ translateY: (1 - titleOpacity.value) * 20 }]
+  }));
+  
+  const subtitleAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: subtitleOpacity.value,
+    transform: [{ translateY: (1 - subtitleOpacity.value) * 10 }]
+  }));
+  
+  const formAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: formOpacity.value,
+    transform: [{ translateY: (1 - formOpacity.value) * 20 }]
+  }));
+  
+  const buttonsAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: buttonsOpacity.value,
+    transform: [{ translateY: (1 - buttonsOpacity.value) * 20 }]
+  }));
+  
+  const footerAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: footerOpacity.value
+  }));
+  
+  // Start animations when component mounts
+  useEffect(() => {
+    // Sequential animations for a smooth entry
+    logoOpacity.value = withTiming(1, { duration: 600 });
+    logoScale.value = withTiming(1, { duration: 800 });
+    
+    // Delayed animations for text and form
+    titleOpacity.value = withDelay(300, withTiming(1, { duration: 500 }));
+    subtitleOpacity.value = withDelay(500, withTiming(1, { duration: 500 }));
+    formOpacity.value = withDelay(700, withTiming(1, { duration: 600 }));
+    buttonsOpacity.value = withDelay(900, withTiming(1, { duration: 600 }));
+    footerOpacity.value = withDelay(1100, withTiming(1, { duration: 600 }));
+  }, []);
+  
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/home');
+      router.replace('/(protected)/home');
     }
   }, [isAuthenticated]);
 
@@ -141,7 +206,7 @@ export default function Login() {
         
         // Navigate to home screen
         setTimeout(() => {
-          router.replace('/home');
+          router.replace('/(protected)/home');
         }, 1000);
       } catch (error) {
         // Display error message
@@ -187,167 +252,175 @@ export default function Login() {
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../../assets/images/klyptik.png')}
-            style={styles.logo}
-            contentFit="contain"
-          />
-        </View>
+        {/* Logo */}
+        <AnimatedImage
+          source={require('../../assets/images/klyptik.png')}
+          style={[styles.logo, logoAnimatedStyle]}
+          contentFit="contain"
+        />
         
-        <Text style={[styles.welcomeText, { color: theme.text }]}>
+        {/* Title and subtitle */}
+        <AnimatedText style={[styles.welcomeText, { color: theme.text }, titleAnimatedStyle]}>
           {isLogin ? 'Welcome Back' : 'Create Account'}
-        </Text>
-        <Text style={[styles.subtitle, { color: isDark ? '#ccc' : '#666' }]}>
-          {isLogin ? 'Sign in to continue' : 'Sign up to get started'}
-        </Text>
+        </AnimatedText>
         
-        {!isLogin && (
+        <AnimatedText style={[styles.subtitle, { color: isDark ? '#ccc' : '#666' }, subtitleAnimatedStyle]}>
+          {isLogin ? 'Sign in to continue' : 'Sign up to get started'}
+        </AnimatedText>
+        
+        {/* Form fields */}
+        <AnimatedView style={[{ width: '100%' }, formAnimatedStyle]}>
+          {!isLogin && (
+            <View style={styles.inputContainer}>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Name</Text>
+              <View style={[styles.inputWrapper, { borderColor: errors.name ? theme.error : theme.border }]}>
+                <Ionicons name="person-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  placeholder="Enter your name"
+                  placeholderTextColor={isDark ? '#aaa' : '#999'}
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                  editable={!isLoading}
+                />
+              </View>
+              {errors.name && (
+                <Text style={[styles.errorText, { color: theme.error }]}>{errors.name}</Text>
+              )}
+            </View>
+          )}
+          
           <View style={styles.inputContainer}>
-            <Text style={[styles.inputLabel, { color: theme.text }]}>Name</Text>
-            <View style={[styles.inputWrapper, { borderColor: errors.name ? theme.error : theme.border }]}>
-              <Ionicons name="person-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Email</Text>
+            <View style={[styles.inputWrapper, { borderColor: errors.email ? theme.error : theme.border }]}>
+              <Ionicons name="mail-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: theme.text }]}
-                placeholder="Enter your name"
+                placeholder="Enter your email"
                 placeholderTextColor={isDark ? '#aaa' : '#999'}
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
                 editable={!isLoading}
               />
             </View>
-            {errors.name && (
-              <Text style={[styles.errorText, { color: theme.error }]}>{errors.name}</Text>
+            {errors.email && (
+              <Text style={[styles.errorText, { color: theme.error }]}>{errors.email}</Text>
             )}
           </View>
-        )}
-        
-        <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, { color: theme.text }]}>Email</Text>
-          <View style={[styles.inputWrapper, { borderColor: errors.email ? theme.error : theme.border }]}>
-            <Ionicons name="mail-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
-            <TextInput
-              style={[styles.input, { color: theme.text }]}
-              placeholder="Enter your email"
-              placeholderTextColor={isDark ? '#aaa' : '#999'}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!isLoading}
-            />
-          </View>
-          {errors.email && (
-            <Text style={[styles.errorText, { color: theme.error }]}>{errors.email}</Text>
-          )}
-        </View>
-        
-        <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, { color: theme.text }]}>Password</Text>
-          <View style={[styles.inputWrapper, { borderColor: errors.password ? theme.error : theme.border }]}>
-            <Ionicons name="lock-closed-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
-            <TextInput
-              style={[styles.input, { color: theme.text }]}
-              placeholder="Enter your password"
-              placeholderTextColor={isDark ? '#aaa' : '#999'}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              editable={!isLoading}
-            />
-            <TouchableOpacity 
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIcon}
-              disabled={isLoading}
-            >
-              <Ionicons 
-                name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                size={20} 
-                color={isDark ? '#aaa' : '#666'} 
-              />
-            </TouchableOpacity>
-          </View>
-          {errors.password && (
-            <Text style={[styles.errorText, { color: theme.error }]}>{errors.password}</Text>
-          )}
-        </View>
-        
-        {!isLogin && (
+          
           <View style={styles.inputContainer}>
-            <Text style={[styles.inputLabel, { color: theme.text }]}>Confirm Password</Text>
-            <View style={[styles.inputWrapper, { 
-              borderColor: errors.confirmPassword ? theme.error : 
-                (!passwordsMatch && confirmPassword ? theme.error : theme.border) 
-            }]}>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Password</Text>
+            <View style={[styles.inputWrapper, { borderColor: errors.password ? theme.error : theme.border }]}>
               <Ionicons name="lock-closed-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: theme.text }]}
-                placeholder="Confirm your password"
+                placeholder="Enter your password"
                 placeholderTextColor={isDark ? '#aaa' : '#999'}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showConfirmPassword}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
                 editable={!isLoading}
               />
               <TouchableOpacity 
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeIcon}
                 disabled={isLoading}
               >
                 <Ionicons 
-                  name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
+                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
                   size={20} 
                   color={isDark ? '#aaa' : '#666'} 
                 />
               </TouchableOpacity>
             </View>
-            {errors.confirmPassword && (
-              <Text style={[styles.errorText, { color: theme.error }]}>{errors.confirmPassword}</Text>
-            )}
-            {!passwordsMatch && confirmPassword && !errors.confirmPassword && (
-              <Text style={[styles.errorText, { color: theme.error }]}>Passwords do not match</Text>
-            )}
-            {passwordsMatch && password && confirmPassword && (
-              <Text style={[styles.matchText, { color: theme.accent }]}>Passwords match!</Text>
+            {errors.password && (
+              <Text style={[styles.errorText, { color: theme.error }]}>{errors.password}</Text>
             )}
           </View>
-        )}
-        
-        <TouchableOpacity 
-          style={[
-            styles.loginButton, 
-            { 
-              backgroundColor: theme.primary,
-              opacity: isLoading ? 0.7 : 1 
-            }
-          ]} 
-          onPress={isLogin ? handleLogin : handleSignup}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.loginButtonText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
+          
+          {!isLogin && (
+            <View style={styles.inputContainer}>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Confirm Password</Text>
+              <View style={[styles.inputWrapper, { 
+                borderColor: errors.confirmPassword ? theme.error : 
+                  (!passwordsMatch && confirmPassword ? theme.error : theme.border) 
+              }]}>
+                <Ionicons name="lock-closed-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  placeholder="Confirm your password"
+                  placeholderTextColor={isDark ? '#aaa' : '#999'}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  editable={!isLoading}
+                />
+                <TouchableOpacity 
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={styles.eyeIcon}
+                  disabled={isLoading}
+                >
+                  <Ionicons 
+                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
+                    size={20} 
+                    color={isDark ? '#aaa' : '#666'} 
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.confirmPassword && (
+                <Text style={[styles.errorText, { color: theme.error }]}>{errors.confirmPassword}</Text>
+              )}
+              {!passwordsMatch && confirmPassword && !errors.confirmPassword && (
+                <Text style={[styles.errorText, { color: theme.error }]}>Passwords do not match</Text>
+              )}
+              {passwordsMatch && password && confirmPassword && (
+                <Text style={[styles.matchText, { color: theme.accent }]}>Passwords match!</Text>
+              )}
+            </View>
           )}
-        </TouchableOpacity>
+        </AnimatedView>
         
-        <View style={styles.orContainer}>
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
-          <Text style={[styles.orText, { color: isDark ? '#aaa' : '#666' }]}>OR</Text>
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
-        </View>
+        {/* Buttons */}
+        <AnimatedView style={[{ width: '100%' }, buttonsAnimatedStyle]}>
+          <TouchableOpacity 
+            style={[
+              styles.loginButton, 
+              { 
+                backgroundColor: theme.primary,
+                opacity: isLoading ? 0.7 : 1 
+              }
+            ]} 
+            onPress={isLogin ? handleLogin : handleSignup}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.loginButtonText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
+            )}
+          </TouchableOpacity>
+          
+          <View style={styles.orContainer}>
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <Text style={[styles.orText, { color: isDark ? '#aaa' : '#666' }]}>OR</Text>
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.googleButton, { borderColor: theme.border, backgroundColor: isDark ? '#212130' : '#f8f9fa' }]}
+            onPress={handleGoogleLogin}
+            disabled={isLoading}
+          >
+            <Ionicons name="logo-google" size={20} color={theme.text} />
+            <Text style={[styles.googleButtonText, { color: theme.text }]}>Continue with Google</Text>
+          </TouchableOpacity>
+        </AnimatedView>
         
-        <TouchableOpacity 
-          style={[styles.googleButton, { borderColor: theme.border, backgroundColor: isDark ? '#212130' : '#f8f9fa' }]}
-          onPress={handleGoogleLogin}
-          disabled={isLoading}
-        >
-          <Ionicons name="logo-google" size={20} color={theme.text} />
-          <Text style={[styles.googleButtonText, { color: theme.text }]}>Continue with Google</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.signupContainer}>
+        {/* Footer */}
+        <AnimatedView style={[styles.signupContainer, footerAnimatedStyle]}>
           <Text style={[styles.noAccountText, { color: isDark ? '#ccc' : '#666' }]}>
             {isLogin ? "Don't have an account? " : "Already have an account? "}
           </Text>
@@ -356,7 +429,7 @@ export default function Login() {
               {isLogin ? "Sign Up" : "Sign In"}
             </Text>
           </TouchableOpacity>
-        </View>
+        </AnimatedView>
       </ScrollView>
     </KeyboardAvoidingView>
   );

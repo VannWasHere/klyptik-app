@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Modal,
     ScrollView,
@@ -10,10 +10,20 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withTiming
+} from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getTheme } from '../theme/theme';
+
+// Create animated components
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+const AnimatedText = Animated.createAnimatedComponent(Text);
 
 interface FeedbackErrors {
   subject?: string;
@@ -30,6 +40,58 @@ export default function Home() {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<FeedbackErrors>({});
+  
+  // Animation values
+  const headerOpacity = useSharedValue(0);
+  const titleOpacity = useSharedValue(0);
+  const usernameOpacity = useSharedValue(0);
+  const subtitleOpacity = useSharedValue(0);
+  const buttonsOpacity = useSharedValue(0);
+  const modalOpacity = useSharedValue(0);
+  
+  // Initialize animations
+  useEffect(() => {
+    // Sequence the animations
+    headerOpacity.value = withTiming(1, { duration: 800 });
+    titleOpacity.value = withDelay(300, withTiming(1, { duration: 800 }));
+    usernameOpacity.value = withDelay(500, withTiming(1, { duration: 800 }));
+    subtitleOpacity.value = withDelay(700, withTiming(1, { duration: 800 }));
+    buttonsOpacity.value = withDelay(900, withTiming(1, { duration: 800 }));
+  }, []);
+  
+  // Animation styles
+  const headerStyle = useAnimatedStyle(() => ({
+    opacity: headerOpacity.value
+  }));
+  
+  const titleStyle = useAnimatedStyle(() => ({
+    opacity: titleOpacity.value,
+    transform: [{ translateY: (1 - titleOpacity.value) * 20 }]
+  }));
+  
+  const usernameStyle = useAnimatedStyle(() => ({
+    opacity: usernameOpacity.value,
+    transform: [{ translateY: (1 - usernameOpacity.value) * 15 }]
+  }));
+  
+  const subtitleStyle = useAnimatedStyle(() => ({
+    opacity: subtitleOpacity.value,
+    transform: [{ translateY: (1 - subtitleOpacity.value) * 10 }]
+  }));
+  
+  const buttonsStyle = useAnimatedStyle(() => ({
+    opacity: buttonsOpacity.value,
+    transform: [{ translateY: (1 - buttonsOpacity.value) * 30 }]
+  }));
+  
+  const modalStyle = useAnimatedStyle(() => ({
+    opacity: showFeedbackModal ? withTiming(1, { duration: 300 }) : 0,
+    transform: [{ 
+      translateY: showFeedbackModal 
+        ? withTiming(0, { duration: 500 }) 
+        : 50 
+    }]
+  }));
 
   const handleLogout = () => {
     // Call logout from auth context
@@ -87,7 +149,9 @@ export default function Home() {
   
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
+      <Animated.View 
+        style={[styles.header, headerStyle]}
+      >
         <TouchableOpacity 
           style={[styles.themeToggle, { backgroundColor: isDark ? theme.card : '#eee' }]} 
           onPress={toggleTheme}
@@ -109,16 +173,24 @@ export default function Home() {
             color={theme.text} 
           />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
       
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: theme.text }]}>Welcome to Klyptik</Text>
-        {user && user.display_name && (
-          <Text style={[styles.username, { color: theme.primary }]}>Hello, {user.display_name}!</Text>
-        )}
-        <Text style={[styles.subtitle, { color: isDark ? '#aaa' : '#666' }]}>You are logged in!</Text>
+      <Animated.View style={styles.content}>
+        <AnimatedText style={[styles.title, { color: theme.text }, titleStyle]}>
+          Welcome to Klyptik
+        </AnimatedText>
         
-        <View style={styles.buttonContainer}>
+        {user && user.display_name && (
+          <AnimatedText style={[styles.username, { color: theme.primary }, usernameStyle]}>
+            Hello, {user.display_name}!
+          </AnimatedText>
+        )}
+        
+        <AnimatedText style={[styles.subtitle, { color: isDark ? '#aaa' : '#666' }, subtitleStyle]}>
+          You are logged in!
+        </AnimatedText>
+        
+        <Animated.View style={[styles.buttonContainer, buttonsStyle]}>
           <TouchableOpacity 
             style={[styles.button, { backgroundColor: theme.primary }]}
           >
@@ -137,18 +209,20 @@ export default function Home() {
           >
             <Text style={[styles.outlineButtonText, { color: theme.text }]}>Send Feedback</Text>
           </TouchableOpacity>
-        </View>
-      </View>
+        </Animated.View>
+      </Animated.View>
       
       {/* Feedback Modal with custom form handling */}
       <Modal
         visible={showFeedbackModal}
         transparent={true}
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setShowFeedbackModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+          <Animated.View 
+            style={[styles.modalContent, { backgroundColor: theme.card }, modalStyle]}
+          >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.text }]}>Send Feedback</Text>
               <TouchableOpacity onPress={() => setShowFeedbackModal(false)}>
@@ -213,7 +287,7 @@ export default function Home() {
                 <Text style={styles.submitButtonText}>Submit Feedback</Text>
               </TouchableOpacity>
             </ScrollView>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </View>

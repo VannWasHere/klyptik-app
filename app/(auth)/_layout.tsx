@@ -15,7 +15,9 @@ export default function AuthLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: theme.background },
-          animation: 'fade',
+          animation: 'fade_from_bottom',
+          animationDuration: 300,
+          gestureEnabled: false,
         }}
       />
     </View>
