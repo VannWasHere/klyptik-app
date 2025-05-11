@@ -11,9 +11,12 @@ import {
   View
 } from 'react-native';
 import Animated, {
+  Easing,
+  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withSequence,
   withTiming
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
@@ -23,6 +26,8 @@ import { getTheme } from '../theme/theme';
 
 // Create animated components
 const AnimatedText = Animated.createAnimatedComponent(Text);
+const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 interface FeedbackErrors {
   subject?: string;
@@ -30,7 +35,7 @@ interface FeedbackErrors {
 }
 
 export default function Home() {
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark, toggleTheme, animatedBackground, animatedText, animatedCard, transitionProgress } = useTheme();
   const { user, logout } = useAuth();
   const theme = getTheme(isDark);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -46,6 +51,8 @@ export default function Home() {
   const usernameOpacity = useSharedValue(0);
   const subtitleOpacity = useSharedValue(0);
   const buttonsOpacity = useSharedValue(0);
+  const themeIconRotation = useSharedValue(0);
+  const themeToggleScale = useSharedValue(1);
   
   // Initialize animations
   useEffect(() => {
@@ -81,15 +88,78 @@ export default function Home() {
     opacity: buttonsOpacity.value,
     transform: [{ translateY: (1 - buttonsOpacity.value) * 30 }]
   }));
+
+  // Animated button styles for theme toggle and logout
+  const themeToggleStyle = useAnimatedStyle(() => {
+    return {
+      backgroundColor: interpolateColor(
+        transitionProgress.value,
+        [0, 1],
+        ['#eee', theme.card]
+      ),
+      transform: [{ scale: themeToggleScale.value }]
+    };
+  });
   
-  const modalStyle = useAnimatedStyle(() => ({
-    opacity: showFeedbackModal ? withTiming(1, { duration: 300 }) : 0,
-    transform: [{ 
-      translateY: showFeedbackModal 
-        ? withTiming(0, { duration: 500 }) 
-        : 50 
-    }]
-  }));
+  const themeIconStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ 
+        rotate: `${themeIconRotation.value}deg` 
+      }]
+    };
+  });
+  
+  const logoutButtonStyle = useAnimatedStyle(() => {
+    return {
+      backgroundColor: interpolateColor(
+        transitionProgress.value,
+        [0, 1],
+        ['#eee', theme.card]
+      )
+    };
+  });
+  
+  // Modal background animation
+  const modalContentStyle = useAnimatedStyle(() => {
+    return {
+      backgroundColor: interpolateColor(
+        transitionProgress.value,
+        [0, 1],
+        [getTheme(false).card, getTheme(true).card]
+      ),
+      opacity: showFeedbackModal ? withTiming(1, { duration: 300 }) : 0,
+      transform: [{ 
+        translateY: showFeedbackModal 
+          ? withTiming(0, { duration: 400 }) 
+          : 50 
+      }]
+    };
+  });
+
+  const handleThemeToggle = () => {
+    // Calculate the new rotation to avoid confusion with resetting to 0
+    const startRotation = isDark ? 0 : 180;
+    const endRotation = isDark ? 180 : 360;
+    
+    // Reset if we've completed a full spin
+    themeIconRotation.value = startRotation;
+    
+    // Animate the rotation smoothly
+    themeIconRotation.value = withTiming(endRotation, { 
+      duration: 400,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1)
+    });
+    
+    // Add a scale animation
+    themeToggleScale.value = withSequence(
+      withTiming(0.9, { duration: 100 }),
+      withTiming(1.1, { duration: 100 }),
+      withTiming(1, { duration: 200 })
+    );
+    
+    // Toggle theme
+    toggleTheme();
+  };
 
   const handleLogout = () => {
     // Call logout from auth context
@@ -146,23 +216,25 @@ export default function Home() {
   };
   
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <AnimatedView style={[styles.container, animatedBackground]}>
       <Animated.View 
         style={[styles.header, headerStyle]}
       >
-        <TouchableOpacity 
-          style={[styles.themeToggle, { backgroundColor: isDark ? theme.card : '#eee' }]} 
-          onPress={toggleTheme}
+        <AnimatedTouchableOpacity 
+          style={[styles.themeToggle, themeToggleStyle]} 
+          onPress={handleThemeToggle}
         >
-          <Ionicons 
-            name={isDark ? 'sunny-outline' : 'moon-outline'} 
-            size={24} 
-            color={theme.text} 
-          />
-        </TouchableOpacity>
+          <Animated.View style={themeIconStyle}>
+            <Ionicons 
+              name={isDark ? 'sunny-outline' : 'moon-outline'} 
+              size={24} 
+              color={theme.text}
+            />
+          </Animated.View>
+        </AnimatedTouchableOpacity>
         
-        <TouchableOpacity 
-          style={[styles.logoutButton, { backgroundColor: isDark ? theme.card : '#eee' }]} 
+        <AnimatedTouchableOpacity 
+          style={[styles.logoutButton, logoutButtonStyle]} 
           onPress={handleLogout}
         >
           <Ionicons 
@@ -170,21 +242,33 @@ export default function Home() {
             size={24} 
             color={theme.text} 
           />
-        </TouchableOpacity>
+        </AnimatedTouchableOpacity>
       </Animated.View>
       
       <Animated.View style={styles.content}>
-        <AnimatedText style={[styles.title, { color: theme.text }, titleStyle]}>
+        <AnimatedText style={[styles.title, animatedText, titleStyle]}>
           Welcome to Klyptik
         </AnimatedText>
         
         {user && user.display_name && (
-          <AnimatedText style={[styles.username, { color: theme.primary }, usernameStyle]}>
+          <AnimatedText style={[styles.username, usernameStyle, { color: theme.primary }]}>
             Hello, {user.display_name}!
           </AnimatedText>
         )}
         
-        <AnimatedText style={[styles.subtitle, { color: isDark ? '#aaa' : '#666' }, subtitleStyle]}>
+        <AnimatedText 
+          style={[
+            styles.subtitle, 
+            subtitleStyle, 
+            {
+              color: interpolateColor(
+                transitionProgress.value,
+                [0, 1],
+                ['#666', '#aaa']
+              )
+            }
+          ]}
+        >
           You are logged in!
         </AnimatedText>
         
@@ -195,18 +279,42 @@ export default function Home() {
             <Text style={styles.buttonText}>Get Started</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={[styles.outlineButton, { borderColor: theme.border, marginTop: 16 }]}
+          <AnimatedTouchableOpacity 
+            style={[
+              styles.outlineButton, 
+              { 
+                borderColor: interpolateColor(
+                  transitionProgress.value,
+                  [0, 1],
+                  [getTheme(false).border, getTheme(true).border]
+                ),
+                marginTop: 16 
+              }
+            ]}
           >
-            <Text style={[styles.outlineButtonText, { color: theme.text }]}>Learn More</Text>
-          </TouchableOpacity>
+            <AnimatedText style={[styles.outlineButtonText, animatedText]}>
+              Learn More
+            </AnimatedText>
+          </AnimatedTouchableOpacity>
           
-          <TouchableOpacity 
-            style={[styles.outlineButton, { borderColor: theme.border, marginTop: 16 }]}
+          <AnimatedTouchableOpacity 
+            style={[
+              styles.outlineButton, 
+              { 
+                borderColor: interpolateColor(
+                  transitionProgress.value,
+                  [0, 1],
+                  [getTheme(false).border, getTheme(true).border]
+                ),
+                marginTop: 16 
+              }
+            ]}
             onPress={() => setShowFeedbackModal(true)}
           >
-            <Text style={[styles.outlineButtonText, { color: theme.text }]}>Send Feedback</Text>
-          </TouchableOpacity>
+            <AnimatedText style={[styles.outlineButtonText, animatedText]}>
+              Send Feedback
+            </AnimatedText>
+          </AnimatedTouchableOpacity>
         </Animated.View>
       </Animated.View>
       
@@ -219,10 +327,12 @@ export default function Home() {
       >
         <View style={styles.modalOverlay}>
           <Animated.View 
-            style={[styles.modalContent, { backgroundColor: theme.card }, modalStyle]}
+            style={[styles.modalContent, modalContentStyle]}
           >
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Send Feedback</Text>
+              <AnimatedText style={[styles.modalTitle, animatedText]}>
+                Send Feedback
+              </AnimatedText>
               <TouchableOpacity onPress={() => setShowFeedbackModal(false)}>
                 <Ionicons name="close" size={24} color={theme.text} />
               </TouchableOpacity>
@@ -230,7 +340,9 @@ export default function Home() {
             
             <ScrollView style={styles.modalBody}>
               <View style={styles.formGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>Subject</Text>
+                <AnimatedText style={[styles.label, animatedText]}>
+                  Subject
+                </AnimatedText>
                 <TextInput
                   style={[
                     styles.input, 
@@ -253,7 +365,9 @@ export default function Home() {
               </View>
               
               <View style={styles.formGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>Message</Text>
+                <AnimatedText style={[styles.label, animatedText]}>
+                  Message
+                </AnimatedText>
                 <TextInput
                   style={[
                     styles.textArea, 
@@ -288,7 +402,7 @@ export default function Home() {
           </Animated.View>
         </View>
       </Modal>
-    </View>
+    </AnimatedView>
   );
 }
 

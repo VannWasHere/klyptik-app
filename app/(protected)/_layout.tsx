@@ -7,8 +7,11 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getTheme } from '../theme/theme';
 
+// Create animated components
+const AnimatedView = Animated.createAnimatedComponent(View);
+
 export default function ProtectedLayout() {
-  const { isDark } = useTheme();
+  const { isDark, animatedBackground } = useTheme();
   const { isAuthenticated, isLoading } = useAuth();
   const theme = getTheme(isDark);
   
@@ -30,14 +33,13 @@ export default function ProtectedLayout() {
   // Check if we're loading
   if (isLoading) {
     return (
-      <View style={{ 
+      <AnimatedView style={[{ 
         flex: 1, 
         justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: theme.background 
-      }}>
+        alignItems: 'center'
+      }, animatedBackground]}>
         <ActivityIndicator size="large" color={theme.primary} />
-      </View>
+      </AnimatedView>
     );
   }
   
@@ -47,20 +49,20 @@ export default function ProtectedLayout() {
   }
   
   return (
-    <Animated.View 
-      style={[{ flex: 1, backgroundColor: theme.background }, animatedStyle]}
+    <AnimatedView 
+      style={[{ flex: 1 }, animatedBackground, animatedStyle]}
     >
       <StatusBar style={theme.statusBar} />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: theme.background },
+          contentStyle: { backgroundColor: 'transparent' },
           animation: 'fade_from_bottom',
           animationDuration: 350,
           gestureEnabled: true,
           gestureDirection: 'horizontal',
         }}
       />
-    </Animated.View>
+    </AnimatedView>
   );
 } 
