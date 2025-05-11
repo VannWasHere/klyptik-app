@@ -147,7 +147,9 @@ export const saveQuizResults = async (
     questions?: QuizQuestion[],
     userAnswers?: (string | null)[]
 ): Promise<boolean> => {
-    const userData = getUserData();
+    const userData = await getUserData();
+    console.log(userData);
+
     try {
         // Example payload for saving quiz results
         const payload = {

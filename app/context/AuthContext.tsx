@@ -14,7 +14,7 @@ interface AuthContextType {
   } | null;
   login: (email: string, password: string) => Promise<authService.LoginResponse>;
   register: (name: string, email: string, password: string, confirmPassword: string) => Promise<authService.RegisterResponse>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 // Create the context with a default value
@@ -28,7 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => {
     return {} as authService.RegisterResponse;
   },
-  logout: () => {},
+  logout: async () => {},
 });
 
 // Create a provider component
@@ -41,9 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = authService.getAuthToken();
+        const token = await authService.getAuthToken();
         if (token) {
-          const userData = authService.getUserData();
+          const userData = await authService.getUserData();
           setUser(userData);
           setIsAuthenticated(true);
         } else {
@@ -66,6 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       const response = await authService.login({ email, password });
+      
+      // Ensure auth token and user data are stored before setting authenticated state
+      await authService.storeAuthToken(response.token);
+      await authService.storeUserData(response);
+      
       setUser({
         uid: response.uid,
         email: response.email,
@@ -91,6 +96,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         confirm_password: confirmPassword
       });
+      
+      // If registration includes token, store auth data
+      if (response.token) {
+        await authService.storeAuthToken(response.token);
+        await authService.storeUserData(response);
+        
+        setUser({
+          uid: response.uid,
+          email: response.email,
+          display_name: response.display_name,
+          username: response.username
+        });
+        setIsAuthenticated(true);
+      }
+      
       return response;
     } catch (error) {
       throw error;
@@ -100,8 +120,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Logout function
-  const logout = () => {
-    authService.removeAuthToken();
+  const logout = async () => {
+    await authService.removeAuthToken();
     setIsAuthenticated(false);
     setUser(null);
   };

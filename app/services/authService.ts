@@ -1,4 +1,6 @@
 // Define the types for the API responses and requests
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export interface RegisterRequest {
     name: string;
     email: string;
@@ -88,12 +90,7 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
             throw new Error(responseData.detail || 'Login failed');
         }
 
-        // Store the token immediately on successful login
-        if (responseData.token) {
-            storeAuthToken(responseData.token);
-            storeUserData(responseData);
-        }
-
+        // Return the response data (storage is handled in AuthContext)
         return responseData;
     } catch (error) {
         if (error instanceof Error) {
@@ -104,69 +101,107 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
 };
 
 /**
- * Store user data in local storage
+ * Store user data in storage
  */
-export const storeUserData = (userData: Partial<LoginResponse>): void => {
-    if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('user', JSON.stringify({
-            uid: userData.uid,
-            email: userData.email,
-            display_name: userData.display_name,
-            username: userData.username
-        }));
+export const storeUserData = async (userData: Partial<LoginResponse>): Promise<void> => {
+    const userDataToStore = JSON.stringify({
+        uid: userData.uid,
+        email: userData.email,
+        display_name: userData.display_name,
+        username: userData.username
+    });
+
+    try {
+        // For React Native
+        await AsyncStorage.setItem('user', userDataToStore);
+
+        // For web fallback
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('user', userDataToStore);
+        }
+    } catch (error) {
+        console.error('Error storing user data:', error);
     }
 };
 
 /**
- * Get user data from local storage
+ * Get user data from storage
  */
-export const getUserData = (): { uid?: string; email?: string; display_name?: string; username?: string } | null => {
-    if (typeof localStorage !== 'undefined') {
-        const userData = localStorage.getItem('user');
+export const getUserData = async (): Promise<{ uid?: string; email?: string; display_name?: string; username?: string } | null> => {
+    try {
+        // Try AsyncStorage first (React Native)
+        const userData = await AsyncStorage.getItem('user');
         if (userData) {
             return JSON.parse(userData);
         }
+
+        // Fallback to localStorage for web
+        if (typeof localStorage !== 'undefined') {
+            const webUserData = localStorage.getItem('user');
+            if (webUserData) {
+                return JSON.parse(webUserData);
+            }
+        }
+    } catch (error) {
+        console.error('Error retrieving user data:', error);
     }
     return null;
 };
 
 /**
- * Store auth token in local storage
+ * Store auth token in storage
  */
-export const storeAuthToken = (token: string): void => {
-    // For web
-    if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('authToken', token);
-    }
+export const storeAuthToken = async (token: string): Promise<void> => {
+    try {
+        // For React Native
+        await AsyncStorage.setItem('authToken', token);
 
-    // For React Native, you would use AsyncStorage or SecureStore
-    // We'll implement this when we add those libraries
+        // For web fallback
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('authToken', token);
+        }
+    } catch (error) {
+        console.error('Error storing auth token:', error);
+    }
 };
 
 /**
- * Get auth token from local storage
+ * Get auth token from storage
  */
-export const getAuthToken = (): string | null => {
-    // For web
-    if (typeof localStorage !== 'undefined') {
-        return localStorage.getItem('authToken');
-    }
+export const getAuthToken = async (): Promise<string | null> => {
+    try {
+        // Try AsyncStorage first (React Native)
+        const token = await AsyncStorage.getItem('authToken');
+        if (token) {
+            return token;
+        }
 
-    // For React Native, you would use AsyncStorage or SecureStore
+        // Fallback to localStorage for web
+        if (typeof localStorage !== 'undefined') {
+            return localStorage.getItem('authToken');
+        }
+    } catch (error) {
+        console.error('Error retrieving auth token:', error);
+    }
     return null;
 };
 
 /**
- * Remove auth token from local storage (logout)
+ * Remove auth token from storage (logout)
  */
-export const removeAuthToken = (): void => {
-    // For web
-    if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-    }
+export const removeAuthToken = async (): Promise<void> => {
+    try {
+        // For React Native
+        await AsyncStorage.multiRemove(['authToken', 'user']);
 
-    // For React Native, you would use AsyncStorage or SecureStore
+        // For web fallback
+        if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+        }
+    } catch (error) {
+        console.error('Error removing auth data:', error);
+    }
 };
 
 // Get user profile data

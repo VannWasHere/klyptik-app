@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import React from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -26,30 +25,6 @@ const ContrastHeader: React.FC<ContrastHeaderProps> = ({
   const textColor = isDark ? '#222222' : '#ffffff';
   const buttonBg = isDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)';
   
-  const handleLogout = () => {
-    Alert.alert(
-      'Confirm Logout',
-      'Are you sure you want to log out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-        {
-          text: 'Logout',
-          onPress: async () => {
-            try {
-              await logout();
-              router.replace('/login');
-            } catch (error) {
-              console.error('Logout failed:', error);
-            }
-          },
-          style: 'destructive'
-        }
-      ]
-    );
-  };
   
   return (
     <View style={[styles.header, { backgroundColor: headerBg }]}>
@@ -80,7 +55,7 @@ const ContrastHeader: React.FC<ContrastHeaderProps> = ({
           {showLogout && (
             <TouchableOpacity
               style={[styles.iconButton, { backgroundColor: buttonBg }]}
-              onPress={handleLogout}
+              onPress={logout}
             >
               <Ionicons 
                 name="log-out-outline" 
