@@ -156,17 +156,54 @@ export const saveQuizResults = async (
 
 // Get quiz history
 export const getQuizHistory = async (userId: string) => {
-    // In a real app, this would be an API call to get quiz history
-    // For now, we'll return mock data
+    try {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}api/latest-quiz-results?user_id=${userId}`);
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
 
-    return [
-        { id: 1, topic: 'React Native', score: '8/10', date: '2 days ago' },
-        { id: 2, topic: 'JavaScript', score: '7/10', date: '1 week ago' },
-        { id: 3, topic: 'CSS Grid & Flexbox', score: '9/10', date: '2 weeks ago' },
-    ];
+        const data = await response.json();
+
+        // Transform the API response to a format suitable for our UI
+        return data.quizResults.map((result: any) => {
+            // Format date to be more readable
+            const completedDate = new Date(result.completedAt);
+            const now = new Date();
+
+            // Calculate time difference
+            const diffTime = Math.abs(now.getTime() - completedDate.getTime());
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            let dateText;
+            if (diffDays === 0) {
+                dateText = 'Today';
+            } else if (diffDays === 1) {
+                dateText = 'Yesterday';
+            } else if (diffDays < 7) {
+                dateText = `${diffDays} days ago`;
+            } else if (diffDays < 30) {
+                const weeks = Math.floor(diffDays / 7);
+                dateText = `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
+            } else {
+                dateText = completedDate.toLocaleDateString();
+            }
+
+            return {
+                id: result.createdAt, // Using createdAt as a unique ID
+                topic: result.topic,
+                score: `${result.score}/${result.totalQuestions}`,
+                percentage: result.percentage,
+                date: dateText,
+                completedAt: result.completedAt,
+                questionDetails: result.questionDetails
+            };
+        });
+    } catch (error) {
+        console.error('Error fetching quiz history:', error);
+        // Return empty array if there's an error
+        return [];
+    }
 };
 
 // Mock questions as fallback if API fails
