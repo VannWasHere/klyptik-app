@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -15,34 +15,83 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { getTheme } from '../theme/theme';
 
+interface FormErrors {
+  name?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+}
+
 export default function Login() {
   const { isDark } = useTheme();
   const theme = getTheme(isDark);
   const [isLogin, setIsLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
+  
+  // Check if passwords match in real-time
+  useEffect(() => {
+    if (!isLogin && password && confirmPassword) {
+      setPasswordsMatch(password === confirmPassword);
+    } else {
+      setPasswordsMatch(true);
+    }
+  }, [password, confirmPassword, isLogin]);
 
-  const handleLogin = () => {
-    // Here you would implement your authentication logic
-    console.log('Login with:', email, password);
-    // For now, we'll just navigate to the home screen
-    router.replace({pathname: '/home'});
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+    
+    if (!isLogin && !name) {
+      newErrors.name = 'Name is required';
+    }
+    
+    if (!email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email)) {
+      newErrors.email = 'Invalid email address';
+    }
+    
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    if (!isLogin && !confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (!isLogin && password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSignup = () => {
-    // Implement signup logic here
-    console.log('Signup with:', {
-      name,
-      email,
-      password,
-      confirm_password: confirmPassword
-    });
-    // For now, we'll just navigate to the home screen
-    router.replace({pathname: '/home'});
+  const handleSubmit = () => {
+    if (validateForm()) {
+      if (isLogin) {
+        // Login logic
+        console.log('Login with:', email, password);
+        router.replace({pathname: '/home'});
+      } else {
+        // Signup logic
+        console.log('Signup with:', {
+          name,
+          email,
+          password,
+          confirm_password: confirmPassword
+        });
+        router.replace({pathname: '/home'});
+      }
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -52,6 +101,12 @@ export default function Login() {
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
+    setName('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setErrors({});
+    setPasswordsMatch(true);
   };
 
   return (
@@ -78,7 +133,7 @@ export default function Login() {
         {!isLogin && (
           <View style={styles.inputContainer}>
             <Text style={[styles.inputLabel, { color: theme.text }]}>Name</Text>
-            <View style={[styles.inputWrapper, { borderColor: theme.border }]}>
+            <View style={[styles.inputWrapper, { borderColor: errors.name ? theme.error : theme.border }]}>
               <Ionicons name="person-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: theme.text }]}
@@ -89,12 +144,15 @@ export default function Login() {
                 autoCapitalize="words"
               />
             </View>
+            {errors.name && (
+              <Text style={[styles.errorText, { color: theme.error }]}>{errors.name}</Text>
+            )}
           </View>
         )}
         
         <View style={styles.inputContainer}>
           <Text style={[styles.inputLabel, { color: theme.text }]}>Email</Text>
-          <View style={[styles.inputWrapper, { borderColor: theme.border }]}>
+          <View style={[styles.inputWrapper, { borderColor: errors.email ? theme.error : theme.border }]}>
             <Ionicons name="mail-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
             <TextInput
               style={[styles.input, { color: theme.text }]}
@@ -106,11 +164,14 @@ export default function Login() {
               autoCapitalize="none"
             />
           </View>
+          {errors.email && (
+            <Text style={[styles.errorText, { color: theme.error }]}>{errors.email}</Text>
+          )}
         </View>
         
         <View style={styles.inputContainer}>
           <Text style={[styles.inputLabel, { color: theme.text }]}>Password</Text>
-          <View style={[styles.inputWrapper, { borderColor: theme.border }]}>
+          <View style={[styles.inputWrapper, { borderColor: errors.password ? theme.error : theme.border }]}>
             <Ionicons name="lock-closed-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
             <TextInput
               style={[styles.input, { color: theme.text }]}
@@ -131,12 +192,18 @@ export default function Login() {
               />
             </TouchableOpacity>
           </View>
+          {errors.password && (
+            <Text style={[styles.errorText, { color: theme.error }]}>{errors.password}</Text>
+          )}
         </View>
         
         {!isLogin && (
           <View style={styles.inputContainer}>
             <Text style={[styles.inputLabel, { color: theme.text }]}>Confirm Password</Text>
-            <View style={[styles.inputWrapper, { borderColor: theme.border }]}>
+            <View style={[styles.inputWrapper, { 
+              borderColor: errors.confirmPassword ? theme.error : 
+                (!passwordsMatch && confirmPassword ? theme.error : theme.border) 
+            }]}>
               <Ionicons name="lock-closed-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: theme.text }]}
@@ -157,12 +224,21 @@ export default function Login() {
                 />
               </TouchableOpacity>
             </View>
+            {errors.confirmPassword && (
+              <Text style={[styles.errorText, { color: theme.error }]}>{errors.confirmPassword}</Text>
+            )}
+            {!passwordsMatch && confirmPassword && !errors.confirmPassword && (
+              <Text style={[styles.errorText, { color: theme.error }]}>Passwords do not match</Text>
+            )}
+            {passwordsMatch && password && confirmPassword && (
+              <Text style={[styles.matchText, { color: theme.accent }]}>Passwords match!</Text>
+            )}
           </View>
         )}
         
         <TouchableOpacity 
           style={[styles.loginButton, { backgroundColor: theme.primary }]} 
-          onPress={isLogin ? handleLogin : handleSignup}
+          onPress={handleSubmit}
         >
           <Text style={styles.loginButtonText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
         </TouchableOpacity>
@@ -255,6 +331,16 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 8,
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  matchText: {
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
   loginButton: {
     borderRadius: 12,
