@@ -11,7 +11,7 @@ interface ApiQuizResponse {
     quiz: {
         title?: string;
         questions: ApiQuizQuestion[];
-    };
+    } | ApiQuizQuestion[]; // Add support for direct array format
 }
 
 export interface QuizQuestion {
@@ -45,8 +45,21 @@ export const generateQuizQuestions = async (
 
         const data: ApiQuizResponse = await response.json();
 
+        // Handle different response formats
+        let questions: ApiQuizQuestion[] = [];
+
+        if (Array.isArray(data.quiz)) {
+            // Direct array format
+            questions = data.quiz;
+        } else if (data.quiz && data.quiz.questions) {
+            // Nested format with questions wrapper
+            questions = data.quiz.questions;
+        } else {
+            throw new Error('Unexpected API response format');
+        }
+
         // Transform API response to our app's format
-        return data.quiz.questions.map((q, index) => {
+        return questions.map((q, index) => {
             // Convert letter answer (A, B, C, D) to actual option
             const letterToIndex: Record<string, number> = {
                 'A': 0,
@@ -61,9 +74,11 @@ export const generateQuizQuestions = async (
             let options = [...q.options]; // Create a copy of options to modify if needed
 
             // Handle different answer formats
-            if (q.answer === 'None of the above (all are valid)') {
+            if (q.answer === 'None of the above (all are valid)' ||
+                q.answer.toLowerCase() === 'none of the above') {
                 // Special case for this specific answer
-                correctAnswerIndex = q.options.findIndex(o => o === 'None of the above (all are valid)');
+                correctAnswerIndex = q.options.findIndex(o =>
+                    o.toLowerCase().includes('none of the above'));
                 if (correctAnswerIndex === -1) {
                     // If not found in options, use the last option
                     correctAnswerIndex = q.options.length - 1;
@@ -78,6 +93,23 @@ export const generateQuizQuestions = async (
                     // If the letter index is out of bounds, use the answer text directly
                     correctAnswer = q.answer;
                 }
+            } else if (q.answer.toLowerCase() === 'all of the above' ||
+                q.answer.toLowerCase() === 'd' &&
+                options.some(opt => opt.toLowerCase().includes('all of the above'))) {
+                // Handle "all of the above" answers
+                correctAnswerIndex = options.findIndex(opt =>
+                    opt.toLowerCase().includes('all of the above'));
+                if (correctAnswerIndex === -1) {
+                    // If not found in options, check for option D which might be "all of the above"
+                    if (options.length >= 4 && options[3].toLowerCase().includes('all')) {
+                        correctAnswerIndex = 3;
+                    } else {
+                        // Last resort: add it as an option
+                        options.push('All of the above');
+                        correctAnswerIndex = options.length - 1;
+                    }
+                }
+                correctAnswer = options[correctAnswerIndex];
             } else {
                 // Direct text match - check if the answer is in the options
                 correctAnswerIndex = q.options.findIndex(option => option === q.answer);

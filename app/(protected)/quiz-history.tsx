@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import QuizDetailsModal from '../components/quiz/QuizDetailsModal';
+import ContrastHeader from '../components/ui/ContrastHeader';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getAllQuizHistory } from '../services/quizService';
@@ -117,9 +118,7 @@ export default function QuizHistory() {
   
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Quiz History</Text>
-      </View>
+      <ContrastHeader title="Quiz History" />
       
       {quizResults.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -153,15 +152,7 @@ export default function QuizHistory() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 50,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    paddingTop: 0,
   },
   listContainer: {
     padding: 16,

@@ -16,6 +16,7 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
+import ContrastHeader from '../components/ui/ContrastHeader';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getQuizHistory } from '../services/quizService';
@@ -176,43 +177,10 @@ export default function Home() {
   
   return (
     <AnimatedView style={[styles.container, animatedBackground]}>
-      <Animated.View style={[styles.header, headerStyle]}>
-        <View style={styles.headerContent}>
-          <AnimatedText style={[styles.appTitle, animatedText]}>
-            Klyptik
-          </AnimatedText>
-          
-          <View style={styles.headerButtons}>
-            <AnimatedTouchableOpacity 
-              style={[styles.themeToggle, { backgroundColor: theme.card }]} 
-              onPress={handleThemeToggle}
-            >
-              <Animated.View style={iconStyle}>
-                <Ionicons 
-                  name={isDark ? "sunny-outline" : "moon-outline"} 
-                  size={24} 
-                  color={theme.text} 
-                />
-              </Animated.View>
-            </AnimatedTouchableOpacity>
-            
-            <AnimatedTouchableOpacity 
-              style={[styles.logoutButton, { backgroundColor: theme.card }]} 
-              onPress={handleLogout}
-            >
-              <Ionicons 
-                name="log-out-outline" 
-                size={24} 
-                color={theme.text} 
-              />
-            </AnimatedTouchableOpacity>
-          </View>
-        </View>
-        
-        <AnimatedText style={[styles.welcomeText, animatedText]}>
-          {user && user.display_name ? `Hello, ${user.display_name}!` : 'Welcome!'}
-        </AnimatedText>
-      </Animated.View>
+      <ContrastHeader 
+        title="Klyptik" 
+        welcomeMessage={user && user.display_name ? `Hello, ${user.display_name}!` : 'Welcome!'}
+      />
       
       <ScrollView 
         style={styles.scrollView}
@@ -340,36 +308,6 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  appTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  headerButtons: {
-    flexDirection: 'row',
-  },
-  themeToggle: {
-    padding: 10,
-    borderRadius: 30,
-    marginRight: 10,
-  },
-  logoutButton: {
-    padding: 10,
-    borderRadius: 30,
-  },
-  welcomeText: {
-    fontSize: 18,
-    marginTop: 10,
   },
   scrollView: {
     flex: 1,

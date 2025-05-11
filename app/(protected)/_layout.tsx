@@ -1,4 +1,4 @@
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, usePathname } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import BottomTabBar from '../components/BottomTabBar';
@@ -10,8 +10,25 @@ export default function ProtectedLayout() {
   const { isAuthenticated, isLoading } = useAuth();
   const { isDark } = useTheme();
   const theme = getTheme(isDark);
+  const pathname = usePathname();
   
-  // Show loading indicator while checking authentication
+  const hideTabBarPaths = [
+    '/quiz',           
+    '/quiz-setup'      
+  ];
+  
+  const showTabBarPaths = [
+    '/quiz-history',   
+    '/profile',         
+    '/home'             
+  ];
+  
+  const isExplicitShowPath = showTabBarPaths.some(path => pathname.includes(path));
+  
+  const shouldHideTabBar = !isExplicitShowPath && 
+    (hideTabBarPaths.some(path => pathname.includes(path)) || 
+     pathname.includes('/quiz/')); 
+  
   if (isLoading) {
     return (
       <View style={[styles.container, styles.centeredContent, { backgroundColor: theme.background }]}>
@@ -20,7 +37,6 @@ export default function ProtectedLayout() {
     );
   }
   
-  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Redirect href="/login" />;
   }
@@ -31,7 +47,7 @@ export default function ProtectedLayout() {
         headerShown: false,
         animation: 'slide_from_right',
       }} />
-      <BottomTabBar />
+      {!shouldHideTabBar && <BottomTabBar />}
     </View>
   );
 }
