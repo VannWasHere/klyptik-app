@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <TouchableOpacity 
-        style={styles.themeToggle} 
+        style={[styles.themeToggle, { backgroundColor: isDark ? theme.card : '#eee' }]} 
         onPress={toggleTheme}
       >
         <Ionicons 
@@ -22,6 +22,20 @@ export default function Home() {
       
       <Text style={[styles.title, { color: theme.text }]}>Welcome to Klyptik</Text>
       <Text style={[styles.subtitle, { color: isDark ? '#aaa' : '#666' }]}>You are logged in!</Text>
+      
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={[styles.button, { backgroundColor: theme.primary }]}
+        >
+          <Text style={styles.buttonText}>Get Started</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.outlineButton, { borderColor: theme.border }]}
+        >
+          <Text style={[styles.outlineButtonText, { color: theme.text }]}>Learn More</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -38,13 +52,44 @@ const styles = StyleSheet.create({
     top: 50,
     right: 20,
     padding: 10,
+    borderRadius: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 16,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 18,
+    marginBottom: 40,
+    textAlign: 'center',
+  },
+  buttonContainer: {
+    width: '100%',
+    maxWidth: 300,
+    gap: 16,
+  },
+  button: {
+    borderRadius: 12,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  outlineButton: {
+    borderRadius: 12,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  outlineButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

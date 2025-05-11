@@ -15,12 +15,12 @@ export const lightTheme = {
 export const darkTheme = {
     background: '#181829',
     text: '#FFFFFF',
-    primary: '#007BFF',
+    primary: '#3b82f6',
     secondary: '#6c757d',
-    accent: '#28a745',
+    accent: '#10b981',
     border: '#444',
     card: '#212130',
-    error: '#dc3545',
+    error: '#ef4444',
     statusBar: 'light' as StatusBarStyle,
 };
 

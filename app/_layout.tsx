@@ -9,7 +9,10 @@ function AppLayout() {
   const theme = getTheme(isDark);
   
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <View style={{ 
+      flex: 1, 
+      backgroundColor: theme.background 
+    }}>
       <StatusBar style={theme.statusBar} />
       <Slot />
     </View>

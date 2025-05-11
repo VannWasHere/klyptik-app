@@ -18,9 +18,13 @@ import { getTheme } from '../theme/theme';
 export default function Login() {
   const { isDark } = useTheme();
   const theme = getTheme(isDark);
+  const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleLogin = () => {
     // Here you would implement your authentication logic
@@ -29,9 +33,25 @@ export default function Login() {
     router.replace({pathname: '/home'});
   };
 
+  const handleSignup = () => {
+    // Implement signup logic here
+    console.log('Signup with:', {
+      name,
+      email,
+      password,
+      confirm_password: confirmPassword
+    });
+    // For now, we'll just navigate to the home screen
+    router.replace({pathname: '/home'});
+  };
+
   const handleGoogleLogin = () => {
     // Implement Google authentication here
     console.log('Login with Google');
+  };
+
+  const toggleAuthMode = () => {
+    setIsLogin(!isLogin);
   };
 
   return (
@@ -48,8 +68,29 @@ export default function Login() {
           />
         </View>
         
-        <Text style={[styles.welcomeText, { color: theme.text }]}>Welcome Back</Text>
-        <Text style={[styles.subtitle, { color: isDark ? '#ccc' : '#666' }]}>Sign in to continue</Text>
+        <Text style={[styles.welcomeText, { color: theme.text }]}>
+          {isLogin ? 'Welcome Back' : 'Create Account'}
+        </Text>
+        <Text style={[styles.subtitle, { color: isDark ? '#ccc' : '#666' }]}>
+          {isLogin ? 'Sign in to continue' : 'Sign up to get started'}
+        </Text>
+        
+        {!isLogin && (
+          <View style={styles.inputContainer}>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Name</Text>
+            <View style={[styles.inputWrapper, { borderColor: theme.border }]}>
+              <Ionicons name="person-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, { color: theme.text }]}
+                placeholder="Enter your name"
+                placeholderTextColor={isDark ? '#aaa' : '#999'}
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
+        )}
         
         <View style={styles.inputContainer}>
           <Text style={[styles.inputLabel, { color: theme.text }]}>Email</Text>
@@ -92,15 +133,38 @@ export default function Login() {
           </View>
         </View>
         
-        <TouchableOpacity style={styles.forgotPassword}>
-          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-        </TouchableOpacity>
+        {!isLogin && (
+          <View style={styles.inputContainer}>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Confirm Password</Text>
+            <View style={[styles.inputWrapper, { borderColor: theme.border }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, { color: theme.text }]}
+                placeholder="Confirm your password"
+                placeholderTextColor={isDark ? '#aaa' : '#999'}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity 
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeIcon}
+              >
+                <Ionicons 
+                  name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color={isDark ? '#aaa' : '#666'} 
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
         
         <TouchableOpacity 
-          style={styles.loginButton} 
-          onPress={handleLogin}
+          style={[styles.loginButton, { backgroundColor: theme.primary }]} 
+          onPress={isLogin ? handleLogin : handleSignup}
         >
-          <Text style={styles.loginButtonText}>Sign In</Text>
+          <Text style={styles.loginButtonText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
         </TouchableOpacity>
         
         <View style={styles.orContainer}>
@@ -110,7 +174,7 @@ export default function Login() {
         </View>
         
         <TouchableOpacity 
-          style={[styles.googleButton, { borderColor: theme.border }]}
+          style={[styles.googleButton, { borderColor: theme.border, backgroundColor: isDark ? '#212130' : '#f8f9fa' }]}
           onPress={handleGoogleLogin}
         >
           <Ionicons name="logo-google" size={20} color={theme.text} />
@@ -118,9 +182,13 @@ export default function Login() {
         </TouchableOpacity>
         
         <View style={styles.signupContainer}>
-          <Text style={[styles.noAccountText, { color: isDark ? '#ccc' : '#666' }]}>Don&apos;t have an account? </Text>
-          <TouchableOpacity>
-            <Text style={styles.signupText}>Sign Up</Text>
+          <Text style={[styles.noAccountText, { color: isDark ? '#ccc' : '#666' }]}>
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+          </Text>
+          <TouchableOpacity onPress={toggleAuthMode}>
+            <Text style={[styles.signupText, { color: theme.primary }]}>
+              {isLogin ? "Sign Up" : "Sign In"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -188,16 +256,7 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: 8,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-  },
-  forgotPasswordText: {
-    color: '#007BFF',
-    fontSize: 14,
-  },
   loginButton: {
-    backgroundColor: '#007BFF',
     borderRadius: 12,
     height: 56,
     justifyContent: 'center',
@@ -246,6 +305,5 @@ const styles = StyleSheet.create({
   signupText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007BFF',
   },
 }); 
