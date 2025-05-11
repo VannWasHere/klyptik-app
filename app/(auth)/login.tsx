@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -12,7 +13,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
+import * as authService from '../services/authService';
 import { getTheme } from '../theme/theme';
 
 interface FormErrors {
@@ -28,6 +31,7 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Form state
   const [name, setName] = useState('');
@@ -75,38 +79,100 @@ export default function Login() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSignup = async () => {
     if (validateForm()) {
-      if (isLogin) {
-        // Login logic
-        console.log('Login with:', email, password);
-        router.replace({pathname: '/home'});
-      } else {
-        // Signup logic
-        console.log('Signup with:', {
+      setIsLoading(true);
+      try {
+        const response = await authService.register({
           name,
           email,
           password,
           confirm_password: confirmPassword
         });
-        router.replace({pathname: '/home'});
+        
+        // Display success message
+        Toast.show({
+          type: 'success',
+          text1: 'Registration Successful',
+          text2: response.message || 'You can now login with your credentials',
+          position: 'bottom'
+        });
+        
+        // Switch to login form after successful registration
+        setIsLogin(true);
+        resetForm();
+      } catch (error) {
+        // Display error message
+        Toast.show({
+          type: 'error',
+          text1: 'Registration Failed',
+          text2: error instanceof Error ? error.message : 'An unexpected error occurred',
+          position: 'bottom'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleLogin = async () => {
+    if (validateForm()) {
+      setIsLoading(true);
+      try {
+        const response = await authService.login({
+          email,
+          password
+        });
+        
+        // Display success message
+        Toast.show({
+          type: 'success',
+          text1: 'Login Successful',
+          text2: response.message || 'Welcome back!',
+          position: 'bottom',
+          visibilityTime: 2000
+        });
+        
+        // Navigate to home screen
+        setTimeout(() => {
+          router.replace({pathname: '/home'});
+        }, 1000);
+      } catch (error) {
+        // Display error message
+        Toast.show({
+          type: 'error',
+          text1: 'Login Failed',
+          text2: error instanceof Error ? error.message : 'Invalid email or password',
+          position: 'bottom'
+        });
+      } finally {
+        setIsLoading(false);
       }
     }
   };
 
   const handleGoogleLogin = () => {
     // Implement Google authentication here
-    console.log('Login with Google');
+    Toast.show({
+      type: 'info',
+      text1: 'Google Login',
+      text2: 'Google login is not implemented yet',
+      position: 'bottom'
+    });
   };
 
-  const toggleAuthMode = () => {
-    setIsLogin(!isLogin);
+  const resetForm = () => {
     setName('');
     setEmail('');
     setPassword('');
     setConfirmPassword('');
     setErrors({});
     setPasswordsMatch(true);
+  };
+
+  const toggleAuthMode = () => {
+    setIsLogin(!isLogin);
+    resetForm();
   };
 
   return (
@@ -142,6 +208,7 @@ export default function Login() {
                 value={name}
                 onChangeText={setName}
                 autoCapitalize="words"
+                editable={!isLoading}
               />
             </View>
             {errors.name && (
@@ -162,6 +229,7 @@ export default function Login() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!isLoading}
             />
           </View>
           {errors.email && (
@@ -180,10 +248,12 @@ export default function Login() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
+              editable={!isLoading}
             />
             <TouchableOpacity 
               onPress={() => setShowPassword(!showPassword)}
               style={styles.eyeIcon}
+              disabled={isLoading}
             >
               <Ionicons 
                 name={showPassword ? "eye-off-outline" : "eye-outline"} 
@@ -212,10 +282,12 @@ export default function Login() {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
+                editable={!isLoading}
               />
               <TouchableOpacity 
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 style={styles.eyeIcon}
+                disabled={isLoading}
               >
                 <Ionicons 
                   name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
@@ -237,10 +309,21 @@ export default function Login() {
         )}
         
         <TouchableOpacity 
-          style={[styles.loginButton, { backgroundColor: theme.primary }]} 
-          onPress={handleSubmit}
+          style={[
+            styles.loginButton, 
+            { 
+              backgroundColor: theme.primary,
+              opacity: isLoading ? 0.7 : 1 
+            }
+          ]} 
+          onPress={isLogin ? handleLogin : handleSignup}
+          disabled={isLoading}
         >
-          <Text style={styles.loginButtonText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.loginButtonText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
+          )}
         </TouchableOpacity>
         
         <View style={styles.orContainer}>
@@ -252,6 +335,7 @@ export default function Login() {
         <TouchableOpacity 
           style={[styles.googleButton, { borderColor: theme.border, backgroundColor: isDark ? '#212130' : '#f8f9fa' }]}
           onPress={handleGoogleLogin}
+          disabled={isLoading}
         >
           <Ionicons name="logo-google" size={20} color={theme.text} />
           <Text style={[styles.googleButtonText, { color: theme.text }]}>Continue with Google</Text>
@@ -261,7 +345,7 @@ export default function Login() {
           <Text style={[styles.noAccountText, { color: isDark ? '#ccc' : '#666' }]}>
             {isLogin ? "Don't have an account? " : "Already have an account? "}
           </Text>
-          <TouchableOpacity onPress={toggleAuthMode}>
+          <TouchableOpacity onPress={toggleAuthMode} disabled={isLoading}>
             <Text style={[styles.signupText, { color: theme.primary }]}>
               {isLogin ? "Sign Up" : "Sign In"}
             </Text>

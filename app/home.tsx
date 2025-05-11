@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -9,7 +10,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useTheme } from './context/ThemeContext';
+import * as authService from './services/authService';
 import { getTheme } from './theme/theme';
 
 interface FeedbackErrors {
@@ -21,11 +24,52 @@ export default function Home() {
   const { isDark, toggleTheme } = useTheme();
   const theme = getTheme(isDark);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   
   // Form state
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<FeedbackErrors>({});
+
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = authService.getAuthToken();
+      
+      if (!token) {
+        // Redirect to login if no token
+        router.replace('/');
+      } else {
+        // Get user data from localStorage
+        const userData = authService.getUserData();
+        if (userData && userData.display_name) {
+          setDisplayName(userData.display_name);
+        } else {
+          setDisplayName('User');
+        }
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
+  const handleLogout = () => {
+    // Clear auth token
+    authService.removeAuthToken();
+    
+    // Show toast
+    Toast.show({
+      type: 'success',
+      text1: 'Logged Out Successfully',
+      position: 'bottom',
+      visibilityTime: 2000
+    });
+    
+    // Navigate to login screen
+    setTimeout(() => {
+      router.replace('/');
+    }, 1000);
+  };
 
   const validateFeedbackForm = (): boolean => {
     const newErrors: FeedbackErrors = {};
@@ -47,6 +91,15 @@ export default function Home() {
   const handleSubmitFeedback = () => {
     if (validateFeedbackForm()) {
       console.log('Feedback submitted:', { subject, message });
+      
+      // Show success toast
+      Toast.show({
+        type: 'success',
+        text1: 'Feedback Submitted',
+        text2: 'Thank you for your feedback!',
+        position: 'bottom'
+      });
+      
       setShowFeedbackModal(false);
       setSubject('');
       setMessage('');
@@ -56,39 +109,57 @@ export default function Home() {
   
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <TouchableOpacity 
-        style={[styles.themeToggle, { backgroundColor: isDark ? theme.card : '#eee' }]} 
-        onPress={toggleTheme}
-      >
-        <Ionicons 
-          name={isDark ? 'sunny-outline' : 'moon-outline'} 
-          size={24} 
-          color={theme.text} 
-        />
-      </TouchableOpacity>
-      
-      <Text style={[styles.title, { color: theme.text }]}>Welcome to Klyptik</Text>
-      <Text style={[styles.subtitle, { color: isDark ? '#aaa' : '#666' }]}>You are logged in!</Text>
-      
-      <View style={styles.buttonContainer}>
+      <View style={styles.header}>
         <TouchableOpacity 
-          style={[styles.button, { backgroundColor: theme.primary }]}
+          style={[styles.themeToggle, { backgroundColor: isDark ? theme.card : '#eee' }]} 
+          onPress={toggleTheme}
         >
-          <Text style={styles.buttonText}>Get Started</Text>
+          <Ionicons 
+            name={isDark ? 'sunny-outline' : 'moon-outline'} 
+            size={24} 
+            color={theme.text} 
+          />
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.outlineButton, { borderColor: theme.border, marginTop: 16 }]}
+          style={[styles.logoutButton, { backgroundColor: isDark ? theme.card : '#eee' }]} 
+          onPress={handleLogout}
         >
-          <Text style={[styles.outlineButtonText, { color: theme.text }]}>Learn More</Text>
+          <Ionicons 
+            name="log-out-outline" 
+            size={24} 
+            color={theme.text} 
+          />
         </TouchableOpacity>
+      </View>
+      
+      <View style={styles.content}>
+        <Text style={[styles.title, { color: theme.text }]}>Welcome to Klyptik</Text>
+        {displayName && (
+          <Text style={[styles.username, { color: theme.primary }]}>Hello, {displayName}!</Text>
+        )}
+        <Text style={[styles.subtitle, { color: isDark ? '#aaa' : '#666' }]}>You are logged in!</Text>
         
-        <TouchableOpacity 
-          style={[styles.outlineButton, { borderColor: theme.border, marginTop: 16 }]}
-          onPress={() => setShowFeedbackModal(true)}
-        >
-          <Text style={[styles.outlineButtonText, { color: theme.text }]}>Send Feedback</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={[styles.button, { backgroundColor: theme.primary }]}
+          >
+            <Text style={styles.buttonText}>Get Started</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.outlineButton, { borderColor: theme.border, marginTop: 16 }]}
+          >
+            <Text style={[styles.outlineButtonText, { color: theme.text }]}>Learn More</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.outlineButton, { borderColor: theme.border, marginTop: 16 }]}
+            onPress={() => setShowFeedbackModal(true)}
+          >
+            <Text style={[styles.outlineButtonText, { color: theme.text }]}>Send Feedback</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       
       {/* Feedback Modal with custom form handling */}
@@ -174,21 +245,37 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+  },
+  content: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
   },
   themeToggle: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
+    padding: 10,
+    borderRadius: 20,
+  },
+  logoutButton: {
     padding: 10,
     borderRadius: 20,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  username: {
+    fontSize: 22,
+    fontWeight: '600',
+    marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
