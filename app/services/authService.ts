@@ -45,7 +45,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL; // Fetch from .env file with f
  */
 export const register = async (data: RegisterRequest): Promise<RegisterResponse> => {
     try {
-        const response = await fetch(`${BASE_URL}/auth/register`, {
+        const response = await fetch(`${BASE_URL}auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ export const register = async (data: RegisterRequest): Promise<RegisterResponse>
  */
 export const login = async (data: LoginRequest): Promise<LoginResponse> => {
     try {
-        const response = await fetch(`${BASE_URL}/auth/login`, {
+        const response = await fetch(`${BASE_URL}auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
