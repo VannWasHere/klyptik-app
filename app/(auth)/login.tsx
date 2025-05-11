@@ -28,7 +28,6 @@ import { getTheme } from '../theme/theme';
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 const AnimatedView = Animated.createAnimatedComponent(View);
 const AnimatedText = Animated.createAnimatedComponent(Text);
-const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 interface FormErrors {
   name?: string;

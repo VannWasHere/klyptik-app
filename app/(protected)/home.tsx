@@ -2,19 +2,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withTiming
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +22,6 @@ import { useTheme } from '../context/ThemeContext';
 import { getTheme } from '../theme/theme';
 
 // Create animated components
-const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 const AnimatedText = Animated.createAnimatedComponent(Text);
 
 interface FeedbackErrors {
@@ -47,7 +46,6 @@ export default function Home() {
   const usernameOpacity = useSharedValue(0);
   const subtitleOpacity = useSharedValue(0);
   const buttonsOpacity = useSharedValue(0);
-  const modalOpacity = useSharedValue(0);
   
   // Initialize animations
   useEffect(() => {
