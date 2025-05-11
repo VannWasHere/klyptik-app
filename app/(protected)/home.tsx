@@ -1,12 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
@@ -15,7 +13,6 @@ import Animated, {
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withSequence,
   withTiming
 } from 'react-native-reanimated';
@@ -29,28 +26,30 @@ const AnimatedText = Animated.createAnimatedComponent(Text);
 const AnimatedView = Animated.createAnimatedComponent(View);
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
-interface FeedbackErrors {
-  subject?: string;
-  message?: string;
-}
+// Recent quiz data - this would come from an API in a real app
+const recentQuizzes = [
+  { id: 1, title: 'React Native Basics', score: '8/10', date: '2 days ago' },
+  { id: 2, title: 'JavaScript Fundamentals', score: '7/10', date: '1 week ago' },
+  { id: 3, title: 'CSS Grid & Flexbox', score: '9/10', date: '2 weeks ago' },
+];
+
+// Popular topics
+const popularTopics = [
+  { id: 1, name: 'React Native', icon: 'logo-react' },
+  { id: 2, name: 'JavaScript', icon: 'logo-javascript' },
+  { id: 3, name: 'Python', icon: 'logo-python' },
+  { id: 4, name: 'Next.js', icon: 'code-slash-outline' },
+  { id: 5, name: 'Machine Learning', icon: 'hardware-chip-outline' },
+];
 
 export default function Home() {
   const { isDark, toggleTheme, animatedBackground, animatedText, animatedCard, transitionProgress } = useTheme();
   const { user, logout } = useAuth();
   const theme = getTheme(isDark);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  
-  // Form state
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [errors, setErrors] = useState<FeedbackErrors>({});
   
   // Animation values
   const headerOpacity = useSharedValue(0);
-  const titleOpacity = useSharedValue(0);
-  const usernameOpacity = useSharedValue(0);
-  const subtitleOpacity = useSharedValue(0);
-  const buttonsOpacity = useSharedValue(0);
+  const contentOpacity = useSharedValue(0);
   const themeIconRotation = useSharedValue(0);
   const themeToggleScale = useSharedValue(1);
   
@@ -58,10 +57,7 @@ export default function Home() {
   useEffect(() => {
     // Sequence the animations
     headerOpacity.value = withTiming(1, { duration: 800 });
-    titleOpacity.value = withDelay(300, withTiming(1, { duration: 800 }));
-    usernameOpacity.value = withDelay(500, withTiming(1, { duration: 800 }));
-    subtitleOpacity.value = withDelay(700, withTiming(1, { duration: 800 }));
-    buttonsOpacity.value = withDelay(900, withTiming(1, { duration: 800 }));
+    contentOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.quad) });
   }, []);
   
   // Animation styles
@@ -69,24 +65,9 @@ export default function Home() {
     opacity: headerOpacity.value
   }));
   
-  const titleStyle = useAnimatedStyle(() => ({
-    opacity: titleOpacity.value,
-    transform: [{ translateY: (1 - titleOpacity.value) * 20 }]
-  }));
-  
-  const usernameStyle = useAnimatedStyle(() => ({
-    opacity: usernameOpacity.value,
-    transform: [{ translateY: (1 - usernameOpacity.value) * 15 }]
-  }));
-  
-  const subtitleStyle = useAnimatedStyle(() => ({
-    opacity: subtitleOpacity.value,
-    transform: [{ translateY: (1 - subtitleOpacity.value) * 10 }]
-  }));
-  
-  const buttonsStyle = useAnimatedStyle(() => ({
-    opacity: buttonsOpacity.value,
-    transform: [{ translateY: (1 - buttonsOpacity.value) * 30 }]
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: contentOpacity.value,
+    transform: [{ translateY: (1 - contentOpacity.value) * 20 }]
   }));
 
   // Animated button styles for theme toggle and logout
@@ -116,23 +97,6 @@ export default function Home() {
         [0, 1],
         ['#eee', theme.card]
       )
-    };
-  });
-  
-  // Modal background animation
-  const modalContentStyle = useAnimatedStyle(() => {
-    return {
-      backgroundColor: interpolateColor(
-        transitionProgress.value,
-        [0, 1],
-        [getTheme(false).card, getTheme(true).card]
-      ),
-      opacity: showFeedbackModal ? withTiming(1, { duration: 300 }) : 0,
-      transform: [{ 
-        translateY: showFeedbackModal 
-          ? withTiming(0, { duration: 400 }) 
-          : 50 
-      }]
     };
   });
 
@@ -179,40 +143,15 @@ export default function Home() {
     }, 1000);
   };
 
-  const validateFeedbackForm = (): boolean => {
-    const newErrors: FeedbackErrors = {};
-    
-    if (!subject) {
-      newErrors.subject = 'Subject is required';
-    }
-    
-    if (!message) {
-      newErrors.message = 'Message is required';
-    } else if (message.length < 10) {
-      newErrors.message = 'Message must be at least 10 characters';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const navigateToQuizSetup = () => {
+    router.push('/quiz-setup');
   };
-
-  const handleSubmitFeedback = () => {
-    if (validateFeedbackForm()) {
-      console.log('Feedback submitted:', { subject, message });
-      
-      // Show success toast
-      Toast.show({
-        type: 'success',
-        text1: 'Feedback Submitted',
-        text2: 'Thank you for your feedback!',
-        position: 'bottom'
-      });
-      
-      setShowFeedbackModal(false);
-      setSubject('');
-      setMessage('');
-      setErrors({});
-    }
+  
+  const startQuizWithTopic = (topic: string) => {
+    router.push({
+      pathname: '/quiz-setup',
+      params: { topic }
+    });
   };
   
   return (
@@ -220,188 +159,108 @@ export default function Home() {
       <Animated.View 
         style={[styles.header, headerStyle]}
       >
-        <AnimatedTouchableOpacity 
-          style={[styles.themeToggle, themeToggleStyle]} 
-          onPress={handleThemeToggle}
-        >
-          <Animated.View style={themeIconStyle}>
-            <Ionicons 
-              name={isDark ? 'sunny-outline' : 'moon-outline'} 
-              size={24} 
-              color={theme.text}
-            />
-          </Animated.View>
-        </AnimatedTouchableOpacity>
+        <View style={styles.headerContent}>
+          <AnimatedText style={[styles.appTitle, animatedText]}>
+            Klyptik Quiz
+          </AnimatedText>
+          
+          <View style={styles.headerButtons}>
+            <AnimatedTouchableOpacity 
+              style={[styles.themeToggle, themeToggleStyle]} 
+              onPress={handleThemeToggle}
+            >
+              <Animated.View style={themeIconStyle}>
+                <Ionicons 
+                  name={isDark ? 'sunny-outline' : 'moon-outline'} 
+                  size={24} 
+                  color={theme.text}
+                />
+              </Animated.View>
+            </AnimatedTouchableOpacity>
+            
+            <AnimatedTouchableOpacity 
+              style={[styles.logoutButton, logoutButtonStyle]} 
+              onPress={handleLogout}
+            >
+              <Ionicons 
+                name="log-out-outline" 
+                size={24} 
+                color={theme.text} 
+              />
+            </AnimatedTouchableOpacity>
+          </View>
+        </View>
         
-        <AnimatedTouchableOpacity 
-          style={[styles.logoutButton, logoutButtonStyle]} 
-          onPress={handleLogout}
-        >
-          <Ionicons 
-            name="log-out-outline" 
-            size={24} 
-            color={theme.text} 
-          />
-        </AnimatedTouchableOpacity>
+        <AnimatedText style={[styles.welcomeText, animatedText]}>
+          {user && user.display_name ? `Hello, ${user.display_name}!` : 'Welcome!'}
+        </AnimatedText>
       </Animated.View>
       
-      <Animated.View style={styles.content}>
-        <AnimatedText style={[styles.title, animatedText, titleStyle]}>
-          Welcome to Klyptik
-        </AnimatedText>
-        
-        {user && user.display_name && (
-          <AnimatedText style={[styles.username, usernameStyle, { color: theme.primary }]}>
-            Hello, {user.display_name}!
-          </AnimatedText>
-        )}
-        
-        <AnimatedText 
-          style={[
-            styles.subtitle, 
-            subtitleStyle, 
-            {
-              color: interpolateColor(
-                transitionProgress.value,
-                [0, 1],
-                ['#666', '#aaa']
-              )
-            }
-          ]}
-        >
-          You are logged in!
-        </AnimatedText>
-        
-        <Animated.View style={[styles.buttonContainer, buttonsStyle]}>
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View style={[styles.content, contentStyle]}>
+          {/* New Quiz Button */}
           <TouchableOpacity 
-            style={[styles.button, { backgroundColor: theme.primary }]}
+            style={[styles.newQuizButton, { backgroundColor: theme.primary }]}
+            onPress={navigateToQuizSetup}
           >
-            <Text style={styles.buttonText}>Get Started</Text>
+            <Ionicons name="add-circle-outline" size={24} color="#fff" />
+            <Text style={styles.newQuizText}>Create New Quiz</Text>
           </TouchableOpacity>
           
-          <AnimatedTouchableOpacity 
-            style={[
-              styles.outlineButton, 
-              { 
-                borderColor: interpolateColor(
-                  transitionProgress.value,
-                  [0, 1],
-                  [getTheme(false).border, getTheme(true).border]
-                ),
-                marginTop: 16 
-              }
-            ]}
-          >
-            <AnimatedText style={[styles.outlineButtonText, animatedText]}>
-              Learn More
+          {/* Recent Quizzes Section */}
+          <View style={styles.section}>
+            <AnimatedText style={[styles.sectionTitle, animatedText]}>
+              Recent Quizzes
             </AnimatedText>
-          </AnimatedTouchableOpacity>
-          
-          <AnimatedTouchableOpacity 
-            style={[
-              styles.outlineButton, 
-              { 
-                borderColor: interpolateColor(
-                  transitionProgress.value,
-                  [0, 1],
-                  [getTheme(false).border, getTheme(true).border]
-                ),
-                marginTop: 16 
-              }
-            ]}
-            onPress={() => setShowFeedbackModal(true)}
-          >
-            <AnimatedText style={[styles.outlineButtonText, animatedText]}>
-              Send Feedback
-            </AnimatedText>
-          </AnimatedTouchableOpacity>
-        </Animated.View>
-      </Animated.View>
-      
-      {/* Feedback Modal with custom form handling */}
-      <Modal
-        visible={showFeedbackModal}
-        transparent={true}
-        animationType="none"
-        onRequestClose={() => setShowFeedbackModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <Animated.View 
-            style={[styles.modalContent, modalContentStyle]}
-          >
-            <View style={styles.modalHeader}>
-              <AnimatedText style={[styles.modalTitle, animatedText]}>
-                Send Feedback
-              </AnimatedText>
-              <TouchableOpacity onPress={() => setShowFeedbackModal(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
             
-            <ScrollView style={styles.modalBody}>
-              <View style={styles.formGroup}>
-                <AnimatedText style={[styles.label, animatedText]}>
-                  Subject
-                </AnimatedText>
-                <TextInput
-                  style={[
-                    styles.input, 
-                    { 
-                      color: theme.text, 
-                      borderColor: errors.subject ? theme.error : theme.border,
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'
-                    }
-                  ]}
-                  placeholder="Enter subject"
-                  placeholderTextColor={isDark ? '#aaa' : '#999'}
-                  value={subject}
-                  onChangeText={setSubject}
-                />
-                {errors.subject && (
-                  <Text style={[styles.errorText, { color: theme.error }]}>
-                    {errors.subject}
-                  </Text>
-                )}
-              </View>
-              
-              <View style={styles.formGroup}>
-                <AnimatedText style={[styles.label, animatedText]}>
-                  Message
-                </AnimatedText>
-                <TextInput
-                  style={[
-                    styles.textArea, 
-                    { 
-                      color: theme.text, 
-                      borderColor: errors.message ? theme.error : theme.border,
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'
-                    }
-                  ]}
-                  placeholder="Enter your message"
-                  placeholderTextColor={isDark ? '#aaa' : '#999'}
-                  value={message}
-                  onChangeText={setMessage}
-                  multiline={true}
-                  numberOfLines={5}
-                  textAlignVertical="top"
-                />
-                {errors.message && (
-                  <Text style={[styles.errorText, { color: theme.error }]}>
-                    {errors.message}
-                  </Text>
-                )}
-              </View>
-              
+            {recentQuizzes.map(quiz => (
               <TouchableOpacity 
-                style={[styles.submitButton, { backgroundColor: theme.primary }]}
-                onPress={handleSubmitFeedback}
+                key={quiz.id}
+                style={[styles.quizCard, { backgroundColor: theme.card }]}
               >
-                <Text style={styles.submitButtonText}>Submit Feedback</Text>
+                <View style={styles.quizInfo}>
+                  <AnimatedText style={[styles.quizTitle, animatedText]}>
+                    {quiz.title}
+                  </AnimatedText>
+                  <AnimatedText style={[styles.quizDate, { color: isDark ? '#aaa' : '#666' }]}>
+                    {quiz.date}
+                  </AnimatedText>
+                </View>
+                <View style={styles.quizScore}>
+                  <AnimatedText style={[styles.scoreText, { color: theme.primary }]}>
+                    {quiz.score}
+                  </AnimatedText>
+                </View>
               </TouchableOpacity>
-            </ScrollView>
-          </Animated.View>
-        </View>
-      </Modal>
+            ))}
+          </View>
+          
+          {/* Popular Topics Section */}
+          <View style={styles.section}>
+            <AnimatedText style={[styles.sectionTitle, animatedText]}>
+              Popular Topics
+            </AnimatedText>
+            
+            <View style={styles.topicsGrid}>
+              {popularTopics.map(topic => (
+                <TouchableOpacity 
+                  key={topic.id}
+                  style={[styles.topicCard, { backgroundColor: theme.card }]}
+                  onPress={() => startQuizWithTopic(topic.name)}
+                >
+                  <Ionicons name={topic.icon as any} size={32} color={theme.primary} />
+                  <AnimatedText style={[styles.topicName, animatedText]}>
+                    {topic.name}
+                  </AnimatedText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </Animated.View>
+      </ScrollView>
     </AnimatedView>
   );
 }
@@ -411,140 +270,108 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 20,
   },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  appTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+  },
   themeToggle: {
     padding: 10,
     borderRadius: 30,
+    marginRight: 10,
   },
   logoutButton: {
     padding: 10,
     borderRadius: 30,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  username: {
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
+  welcomeText: {
     fontSize: 18,
-    marginBottom: 40,
-    textAlign: 'center',
+    marginTop: 10,
   },
-  buttonContainer: {
-    width: '100%',
-    maxWidth: 300,
-  },
-  button: {
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  outlineButton: {
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    borderWidth: 1,
-  },
-  outlineButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalOverlay: {
+  scrollView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  content: {
     padding: 20,
+    paddingBottom: 80,
   },
-  modalContent: {
-    width: '100%',
-    maxWidth: 500,
+  newQuizButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
     borderRadius: 12,
-    overflow: 'hidden',
-    maxHeight: '80%',
+    marginBottom: 24,
   },
-  modalHeader: {
+  newQuizText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  quizCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 12,
+    marginBottom: 12,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+  quizInfo: {
+    flex: 1,
   },
-  modalBody: {
-    padding: 16,
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    marginBottom: 8,
+  quizTitle: {
     fontSize: 16,
     fontWeight: '500',
+    marginBottom: 4,
   },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
-  },
-  textArea: {
-    minHeight: 120,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    fontSize: 16,
-  },
-  errorText: {
-    marginTop: 6,
+  quizDate: {
     fontSize: 14,
   },
-  submitButton: {
-    paddingVertical: 14,
-    borderRadius: 8,
+  quizScore: {
+    paddingLeft: 10,
+  },
+  scoreText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  topicsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  topicCard: {
+    width: '48%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    height: 100,
   },
-  submitButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+  topicName: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 8,
+    textAlign: 'center',
   },
 }); 
