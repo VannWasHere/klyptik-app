@@ -30,7 +30,7 @@ export default function SplashPage() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/splash-icon.png')}
+        source={require('../../assets/images/klyptik.png')}
         style={styles.logo}
         contentFit="contain"
       />
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#181829',
   },
   logo: {
     width: 200,

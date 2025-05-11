@@ -3,17 +3,21 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { getTheme } from '../theme/theme';
 
 export default function Login() {
+  const { isDark } = useTheme();
+  const theme = getTheme(isDark);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -33,28 +37,28 @@ export default function Login() {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.logoContainer}>
           <Image
-            source={require('../../assets/images/splash-icon.png')}
+            source={require('../../assets/images/klyptik.png')}
             style={styles.logo}
             contentFit="contain"
           />
-          <Text style={styles.appName}>Klyptik</Text>
         </View>
         
-        <Text style={styles.welcomeText}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
+        <Text style={[styles.welcomeText, { color: theme.text }]}>Welcome Back</Text>
+        <Text style={[styles.subtitle, { color: isDark ? '#ccc' : '#666' }]}>Sign in to continue</Text>
         
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Email</Text>
-          <View style={styles.inputWrapper}>
-            <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+          <Text style={[styles.inputLabel, { color: theme.text }]}>Email</Text>
+          <View style={[styles.inputWrapper, { borderColor: theme.border }]}>
+            <Ionicons name="mail-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.text }]}
               placeholder="Enter your email"
+              placeholderTextColor={isDark ? '#aaa' : '#999'}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -64,12 +68,13 @@ export default function Login() {
         </View>
         
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Password</Text>
-          <View style={styles.inputWrapper}>
-            <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+          <Text style={[styles.inputLabel, { color: theme.text }]}>Password</Text>
+          <View style={[styles.inputWrapper, { borderColor: theme.border }]}>
+            <Ionicons name="lock-closed-outline" size={20} color={isDark ? '#aaa' : '#666'} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.text }]}
               placeholder="Enter your password"
+              placeholderTextColor={isDark ? '#aaa' : '#999'}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -81,7 +86,7 @@ export default function Login() {
               <Ionicons 
                 name={showPassword ? "eye-off-outline" : "eye-outline"} 
                 size={20} 
-                color="#666" 
+                color={isDark ? '#aaa' : '#666'} 
               />
             </TouchableOpacity>
           </View>
@@ -99,21 +104,21 @@ export default function Login() {
         </TouchableOpacity>
         
         <View style={styles.orContainer}>
-          <View style={styles.divider} />
-          <Text style={styles.orText}>OR</Text>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          <Text style={[styles.orText, { color: isDark ? '#aaa' : '#666' }]}>OR</Text>
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
         </View>
         
         <TouchableOpacity 
-          style={styles.googleButton}
+          style={[styles.googleButton, { borderColor: theme.border }]}
           onPress={handleGoogleLogin}
         >
-          <Ionicons name="logo-google" size={20} color="#000" />
-          <Text style={styles.googleButtonText}>Continue with Google</Text>
+          <Ionicons name="logo-google" size={20} color={theme.text} />
+          <Text style={[styles.googleButtonText, { color: theme.text }]}>Continue with Google</Text>
         </TouchableOpacity>
         
         <View style={styles.signupContainer}>
-          <Text style={styles.noAccountText}>Don&apos;t have an account? </Text>
+          <Text style={[styles.noAccountText, { color: isDark ? '#ccc' : '#666' }]}>Don&apos;t have an account? </Text>
           <TouchableOpacity>
             <Text style={styles.signupText}>Sign Up</Text>
           </TouchableOpacity>
@@ -126,7 +131,6 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -146,17 +150,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginTop: 10,
-    color: '#333',
   },
   welcomeText: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
     marginBottom: 32,
   },
   inputContainer: {
@@ -165,14 +166,12 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
     marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 56,
@@ -184,6 +183,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     fontSize: 16,
+    backgroundColor: 'transparent',
   },
   eyeIcon: {
     padding: 8,
@@ -217,10 +217,8 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ddd',
   },
   orText: {
-    color: '#666',
     paddingHorizontal: 16,
     fontSize: 14,
   },
@@ -229,7 +227,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 12,
     height: 56,
     marginBottom: 32,
@@ -238,7 +235,6 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
   },
   signupContainer: {
     flexDirection: 'row',
@@ -246,7 +242,6 @@ const styles = StyleSheet.create({
   },
   noAccountText: {
     fontSize: 14,
-    color: '#666',
   },
   signupText: {
     fontSize: 14,
