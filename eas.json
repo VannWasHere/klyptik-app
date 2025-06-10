@@ -1,0 +1,58 @@
+{
+  "cli": {
+    "version": ">= 10.1.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://nightlife-rfc-closely-electron.trycloudflare.com/"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://nightlife-rfc-closely-electron.trycloudflare.com/"
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://nightlife-rfc-closely-electron.trycloudflare.com/"
+      }
+    },
+    "android-qr": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://nightlife-rfc-closely-electron.trycloudflare.com/"
+      }
+    },
+    "ios-qr": {
+      "distribution": "internal",
+      "ios": {},
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://nightlife-rfc-closely-electron.trycloudflare.com/"
+      }
+    },
+    "android-only": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://nightlife-rfc-closely-electron.trycloudflare.com/"
+      }
+    },
+    "ios-only": {
+      "ios": {},
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://nightlife-rfc-closely-electron.trycloudflare.com/"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
